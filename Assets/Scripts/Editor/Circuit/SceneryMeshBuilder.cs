@@ -56,27 +56,71 @@ namespace RealisticCarRacing.EditorTools.Circuit
             return builder.ToMesh($"Grandstand_{length:0}m");
         }
 
-        /// <summary>Broad-leaf tree: sub-mesh 0 trunk, 1 canopy (three lumpy spheres).</summary>
-        public static Mesh DeciduousTree()
+        /// <summary>
+        /// Broad-leaf tree: sub-mesh 0 trunk and branches, 1 canopy. The detailed version builds the crown from
+        /// many overlapping lumpy clumps; the distant one from three coarse clumps (about a tenth of the triangles).
+        /// </summary>
+        /// <param name="rounded">A shorter, wider crown (second deciduous species).</param>
+        public static Mesh DeciduousTree(bool detailed, bool rounded = false)
         {
             var builder = new MeshBuilder(2);
-            AddCylinder(builder, 0, Vector3.zero, 0.28f, 0.18f, 4.2f, 6);
-            var random = new System.Random(7);
-            AddBlob(builder, 1, new Vector3(0f, 5.4f, 0f), 2.7f, random);
-            AddBlob(builder, 1, new Vector3(1.1f, 4.6f, 0.5f), 2.1f, random);
-            AddBlob(builder, 1, new Vector3(-0.9f, 4.9f, -0.7f), 2.2f, random);
-            return builder.ToMesh("Tree_Deciduous");
+            var random = new System.Random(rounded ? 17 : 7);
+            float crownY = rounded ? 4.6f : 5.4f, spread = rounded ? 2.3f : 1.7f, size = rounded ? 1.9f : 1.75f;
+            AddCylinder(builder, 0, Vector3.zero, 0.28f, 0.16f, crownY - 0.6f, detailed ? 7 : 4);
+            if (!detailed)
+            {
+                AddBlob(builder, 1, new Vector3(0f, crownY, 0f), size * 1.5f, random, subdivide: false);
+                AddBlob(builder, 1, new Vector3(spread * 0.6f, crownY - 0.8f, spread * 0.3f), size * 1.2f, random, subdivide: false);
+                AddBlob(builder, 1, new Vector3(-spread * 0.5f, crownY - 0.5f, -spread * 0.4f), size * 1.25f, random, subdivide: false);
+                return builder.ToMesh(rounded ? "Tree_Rounded_Far" : "Tree_Deciduous_Far");
+            }
+
+            // Two main branches carrying the side clumps.
+            foreach (float angle in new[] { 40f, 220f })
+            {
+                var direction = Quaternion.Euler(0f, angle, 0f) * new Vector3(1f, 1.4f, 0f).normalized;
+                AddBranch(builder, 0, new Vector3(0f, crownY - 1.8f, 0f), direction, 2.2f, 0.11f);
+            }
+            const int clumps = 7;
+            AddBlob(builder, 1, new Vector3(0f, crownY + size * 0.5f, 0f), size * 1.1f, random);
+            for (int i = 0; i < clumps - 1; i++)
+            {
+                float a = i / (float)(clumps - 1) * Mathf.PI * 2f + (float)random.NextDouble() * 0.5f;
+                float r = spread * (0.75f + (float)random.NextDouble() * 0.35f);
+                float y = crownY - 0.3f + (float)random.NextDouble() * 1.1f;
+                AddBlob(builder, 1, new Vector3(Mathf.Cos(a) * r, y, Mathf.Sin(a) * r), size * (0.8f + (float)random.NextDouble() * 0.3f), random);
+            }
+            return builder.ToMesh(rounded ? "Tree_Rounded" : "Tree_Deciduous");
         }
 
-        /// <summary>Conifer: sub-mesh 0 trunk, 1 stacked cones.</summary>
-        public static Mesh PineTree()
+        /// <summary>Conifer: sub-mesh 0 trunk, 1 stacked drooping cones (fewer and coarser in the distant version).</summary>
+        public static Mesh PineTree(bool detailed)
         {
             var builder = new MeshBuilder(2);
-            AddCylinder(builder, 0, Vector3.zero, 0.22f, 0.12f, 3f, 6);
-            float[] radii = { 2.6f, 2.1f, 1.6f, 1.0f };
+            AddCylinder(builder, 0, Vector3.zero, 0.22f, 0.12f, 3f, detailed ? 6 : 4);
+            float[] radii = detailed ? new[] { 2.7f, 2.3f, 1.9f, 1.5f, 1.05f, 0.6f } : new[] { 2.6f, 1.8f, 1.0f };
+            float step = 6.2f / radii.Length;
             for (int i = 0; i < radii.Length; i++)
-                AddCone(builder, 1, new Vector3(0f, 1.6f + i * 1.55f, 0f), radii[i], 2.8f, 9);
-            return builder.ToMesh("Tree_Pine");
+                AddCone(builder, 1, new Vector3(0f, 1.6f + i * step, 0f), radii[i], step * 1.8f, detailed ? 12 : 6);
+            return builder.ToMesh(detailed ? "Tree_Pine" : "Tree_Pine_Far");
+        }
+
+        static void AddBranch(MeshBuilder builder, int subMesh, Vector3 start, Vector3 direction, float length, float radius)
+        {
+            var rotation = Quaternion.FromToRotation(Vector3.up, direction);
+            const int sides = 4;
+            int previousBottom = -1, previousTop = -1;
+            for (int i = 0; i <= sides; i++)
+            {
+                float angle = i / (float)sides * Mathf.PI * 2f;
+                var around = rotation * new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                int bottom = builder.AddVertex(start + around * radius, new Vector2(i / (float)sides, 0f));
+                int top = builder.AddVertex(start + direction * length + around * radius * 0.4f, new Vector2(i / (float)sides, length / 2f));
+                if (i > 0)
+                    builder.AddQuad(subMesh, previousBottom, bottom, top, previousTop, rotation * new Vector3(Mathf.Cos(angle - 0.8f), 0f, Mathf.Sin(angle - 0.8f)));
+                previousBottom = bottom;
+                previousTop = top;
+            }
         }
 
         /// <summary>Ring of hills on the horizon so the circuit doesn't end at a flat edge.</summary>
@@ -164,9 +208,9 @@ namespace RealisticCarRacing.EditorTools.Circuit
         }
 
         /// <summary>Subdivided icosahedron with noise-displaced vertices, for organic canopies.</summary>
-        static void AddBlob(MeshBuilder builder, int subMesh, Vector3 center, float radius, System.Random random)
+        static void AddBlob(MeshBuilder builder, int subMesh, Vector3 center, float radius, System.Random random, bool subdivide = true)
         {
-            var (vertices, faces) = Icosphere();
+            var (vertices, faces) = Icosphere(subdivide);
             var indices = new int[vertices.Count];
             for (int i = 0; i < vertices.Count; i++)
             {
@@ -183,7 +227,7 @@ namespace RealisticCarRacing.EditorTools.Circuit
             }
         }
 
-        static (List<Vector3> vertices, List<(int, int, int)> faces) Icosphere()
+        static (List<Vector3> vertices, List<(int, int, int)> faces) Icosphere(bool subdivide = true)
         {
             float t = (1f + Mathf.Sqrt(5f)) / 2f;
             var vertices = new List<Vector3>
@@ -199,6 +243,9 @@ namespace RealisticCarRacing.EditorTools.Circuit
                 (0, 11, 5), (0, 5, 1), (0, 1, 7), (0, 7, 10), (0, 10, 11), (1, 5, 9), (5, 11, 4), (11, 10, 2), (10, 7, 6), (7, 1, 8),
                 (3, 9, 4), (3, 4, 2), (3, 2, 6), (3, 6, 8), (3, 8, 9), (4, 9, 5), (2, 4, 11), (6, 2, 10), (8, 6, 7), (9, 8, 1)
             };
+
+            if (!subdivide)
+                return (vertices, faces); // 20 faces, 12 vertices
 
             // One subdivision: 80 faces, 42 vertices.
             var midpoints = new Dictionary<long, int>();

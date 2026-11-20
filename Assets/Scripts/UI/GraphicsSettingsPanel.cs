@@ -16,9 +16,9 @@ namespace RealisticCarRacing.UI
         static readonly string[] PresetTitles = { "LOW", "MEDIUM", "HIGH" };
         static readonly string[] PresetDescriptions =
         {
-            "Older and lower-powered devices: 75% resolution, short hard shadows, fewer and closer trees, no bloom or city skyline. 30 FPS cap on phones.",
-            "Mid-range computers and phones: 90% resolution, soft shadows to 90 m, 2× anti-aliasing, more trees, bloom and skyline.",
-            "Powerful computers: full resolution, soft 4-cascade shadows to 180 m, ambient occlusion, 4× anti-aliasing, the full forest."
+            "Older and lower-powered devices: 75% resolution, FXAA, short hard shadows, fewer and closer trees, no fences, bloom or city skyline. 30 FPS cap on phones.",
+            "Mid-range computers and phones: 90% resolution, soft shadows to 90 m, 2× anti-aliasing, more trees, debris fences, bloom, skyline and headlight beams.",
+            "Powerful computers: full resolution, soft 4-cascade shadows to 180 m, ambient occlusion, 4× anti-aliasing, blended reflections, motion blur, the full forest."
         };
 
         readonly List<(int preset, Text label)> presetLabels = new List<(int, Text)>();

@@ -8,9 +8,10 @@ namespace RealisticCarRacing.Managers
 {
     /// <summary>
     /// Scales the environment to the active graphics preset (Low / Medium / High quality levels):
-    /// view distance, fog, tree density/distance/shadows, the city skyline and bloom. URP-level settings
-    /// (render scale, MSAA, shadows, SSAO) live in each preset's URP asset; this covers the scene-side costs.
-    /// The look (sky, colour grading, hills, track) is the same on every preset.
+    /// view distance, fog, tree density/distance/detail/shadows, the city skyline, debris fences, post-processing
+    /// extras and FXAA. URP-level settings (render scale, MSAA, shadows, SSAO) live in each
+    /// preset's URP asset; this covers the scene-side costs. The look (sky, colour grading, hills, track) is the same
+    /// on every preset.
     /// </summary>
     public sealed class EnvironmentQualityScaler : MonoBehaviour
     {
@@ -27,9 +28,17 @@ namespace RealisticCarRacing.Managers
             [Range(0f, 1f)] public float scatterDensity;
             [Tooltip("Trees within this distance cast shadows (0 = none). Keep at or below the preset's shadow distance.")]
             public float scatterShadowDistance;
+            [Tooltip("Trees beyond this distance use their simplified mesh.")]
+            public float scatterLodDistance;
             [Tooltip("Show the objects under High Detail Root (the city skyline).")]
             public bool highDetailScenery;
             public bool bloom;
+            [Tooltip("Bloom at half instead of quarter resolution, with high-quality upsampling.")]
+            public bool bloomHighQuality;
+            public bool motionBlur;
+            [Tooltip("Alpha-tested debris fences (alpha testing is costly on tile-based mobile GPUs).")]
+            public bool fences;
+            [Tooltip("Post-process anti-aliasing for presets without MSAA.")]
             public AntialiasingMode antialiasing;
         }
 
@@ -37,22 +46,26 @@ namespace RealisticCarRacing.Managers
         [SerializeField] Volume postProcessVolume;
         [SerializeField] InstancedScatter[] scatters = Array.Empty<InstancedScatter>();
         [SerializeField] GameObject highDetailRoot;
+        [SerializeField] GameObject fencesRoot;
         [SerializeField] Tier[] tiers =
         {
             new Tier
             {
                 qualityLevel = "Low", cameraFarClip = 900f, fogEnd = 2800f, scatterDrawDistance = 250f, scatterDensity = 0.35f,
-                scatterShadowDistance = 0f, highDetailScenery = false, bloom = false, antialiasing = AntialiasingMode.None
+                scatterShadowDistance = 0f, scatterLodDistance = 60f, highDetailScenery = false, bloom = false, bloomHighQuality = false,
+                motionBlur = false, fences = false, antialiasing = AntialiasingMode.FastApproximateAntialiasing
             },
             new Tier
             {
                 qualityLevel = "Medium", cameraFarClip = 1700f, fogEnd = 2800f, scatterDrawDistance = 550f, scatterDensity = 0.65f,
-                scatterShadowDistance = 60f, highDetailScenery = true, bloom = true, antialiasing = AntialiasingMode.None
+                scatterShadowDistance = 60f, scatterLodDistance = 110f, highDetailScenery = true, bloom = true, bloomHighQuality = false,
+                motionBlur = false, fences = true, antialiasing = AntialiasingMode.None
             },
             new Tier
             {
                 qualityLevel = "High", cameraFarClip = 3200f, fogEnd = 2800f, scatterDrawDistance = 1100f, scatterDensity = 1f,
-                scatterShadowDistance = 150f, highDetailScenery = true, bloom = true, antialiasing = AntialiasingMode.None
+                scatterShadowDistance = 150f, scatterLodDistance = 180f, highDetailScenery = true, bloom = true, bloomHighQuality = true,
+                motionBlur = true, fences = true, antialiasing = AntialiasingMode.None
             }
         };
 
@@ -62,12 +75,14 @@ namespace RealisticCarRacing.Managers
 
         public Tier ActiveTier { get; private set; }
 
-        public void Configure(Camera cameraToScale, Volume volume, InstancedScatter[] scatterRenderers, GameObject highDetail)
+        public void Configure(Camera cameraToScale, Volume volume, InstancedScatter[] scatterRenderers, GameObject highDetail,
+            GameObject fences = null)
         {
             targetCamera = cameraToScale;
             postProcessVolume = volume;
             scatters = scatterRenderers;
             highDetailRoot = highDetail;
+            fencesRoot = fences;
         }
 
         void OnEnable()
@@ -111,14 +126,26 @@ namespace RealisticCarRacing.Managers
                 scatter.DrawDistance = tier.scatterDrawDistance;
                 scatter.Density = tier.scatterDensity;
                 scatter.ShadowDistance = tier.scatterShadowDistance;
+                scatter.LodDistance = tier.scatterLodDistance;
             }
 
             if (highDetailRoot != null)
                 highDetailRoot.SetActive(tier.highDetailScenery);
+            if (fencesRoot != null)
+                fencesRoot.SetActive(tier.fences);
 
-            if (postProcessVolume != null && postProcessVolume.profile != null &&
-                postProcessVolume.profile.TryGet(out Bloom bloom))
-                bloom.active = tier.bloom;
+            var profile = postProcessVolume != null ? postProcessVolume.profile : null;
+            if (profile != null)
+            {
+                if (profile.TryGet(out Bloom bloom))
+                {
+                    bloom.active = tier.bloom;
+                    bloom.highQualityFiltering.Override(tier.bloomHighQuality);
+                    bloom.downscale.Override(tier.bloomHighQuality ? BloomDownscaleMode.Half : BloomDownscaleMode.Quarter);
+                }
+                if (profile.TryGet(out MotionBlur motionBlur))
+                    motionBlur.active = tier.motionBlur;
+            }
         }
 
         Tier FindTier(string qualityLevel)

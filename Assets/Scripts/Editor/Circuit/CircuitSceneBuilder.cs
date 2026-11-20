@@ -3,6 +3,7 @@ using RealisticCarRacing.Managers;
 using RealisticCarRacing.Racing;
 using RealisticCarRacing.Tracks;
 using RealisticCarRacing.UI;
+using RealisticCarRacing.Vehicles;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -33,7 +34,7 @@ namespace RealisticCarRacing.EditorTools.Circuit
         {
             public Material asphalt, kerb, gravel, barrier, paint, checker, metal, grass, hills, concrete;
             public Material crowd, roof, office, officeBlue, residential, residentialGrey, garage, glass;
-            public Material bark, leaves, pineLeaves;
+            public Material bark, leaves, lightLeaves, pineLeaves, fence;
         }
 
         /// <summary>Areas (XZ) occupied by buildings, kept clear of trees.</summary>
@@ -85,16 +86,18 @@ namespace RealisticCarRacing.EditorTools.Circuit
             var samples = layout.Sample();
             float length = samples[^1].distance + samples[1].distance;
             var barrierSection = TrackMeshBuilder.BarrierSection(layout.barrierHeight, out float paintedFraction);
-            var materials = CreateMaterials(ProceduralTextures.LoadOrCreate(paintedFraction, layout.roadWidth));
+            var textures = ProceduralTextures.LoadOrCreate(paintedFraction, layout.roadWidth);
+            var materials = CreateMaterials(textures);
             SceneBuildUtility.EnsureFolder(MeshFolder);
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
-            SetUpSunSkyAndFog(materials);
+            SetUpSunSkyAndFog(textures.clouds);
 
             // --- Track ---
             var trackRoot = new GameObject("Track");
             var track = trackRoot.AddComponent<RaceTrack>();
             track.Bake(layout, samples);
+            BakeSurfaces(trackRoot, track, samples, layout);
             // Collision uses seamless whole-loop meshes; rendering uses ~200 m chunks so off-screen track is culled.
             float roadTile = TileLength(length, layout.roadWidth), barrierTile = TileLength(length, 8f);
             AddColliderObject("Road", trackRoot.transform, TrackMeshBuilder.Road(samples, length, layout, roadTile, name: "Road_Collider"), null);
@@ -104,6 +107,8 @@ namespace RealisticCarRacing.EditorTools.Circuit
 
             var trackVisuals = new GameObject("TrackVisuals").transform;
             trackVisuals.SetParent(trackRoot.transform, false);
+            var fences = new GameObject("Fences");
+            fences.transform.SetParent(trackVisuals, false);
             int chunk = 0;
             for (int first = 0; first < samples.Length; first += TrackChunkSamples, chunk++)
             {
@@ -112,6 +117,9 @@ namespace RealisticCarRacing.EditorTools.Circuit
                     new[] { materials.asphalt }, collider: false, castShadows: false);
                 AddMeshObject($"Barriers_{chunk}", trackVisuals, TrackMeshBuilder.Barriers(samples, length, layout, barrierSection, barrierTile, first, count, $"Barriers_{chunk}"),
                     new[] { materials.barrier }, collider: false, castShadows: true);
+                // Debris fences on the barriers: alpha-tested, so Medium/High only (see EnvironmentQualityScaler).
+                AddMeshObject($"Fence_{chunk}", fences.transform, TrackMeshBuilder.Fences(samples, length, layout, 4f, first, count, $"Fence_{chunk}"),
+                    new[] { materials.fence }, collider: false, castShadows: false);
             }
             foreach (var kerb in TrackMeshBuilder.KerbPieces(samples, length, layout))
                 AddMeshObject(kerb.name, trackVisuals, kerb, new[] { materials.kerb }, collider: false, castShadows: false);
@@ -156,9 +164,9 @@ namespace RealisticCarRacing.EditorTools.Circuit
             raceObject.AddComponent<RaceMenus>().Configure(raceManager);
 
             var volume = CreatePostProcessing();
-            CreateReflectionProbe(center);
+            CreateReflectionProbes(center, track, layout);
             new GameObject("EnvironmentQuality").AddComponent<EnvironmentQualityScaler>()
-                .Configure(camera, volume, scatters, highDetail);
+                .Configure(camera, volume, scatters, highDetail, fences);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             BakeEnvironmentLighting();
@@ -221,10 +229,15 @@ namespace RealisticCarRacing.EditorTools.Circuit
 
             var m = new CircuitMaterials
             {
-                asphalt = Lit("Asphalt", Color.white, 0.3f, Maps(t.asphalt, t.asphaltNormal, 0.35f)),
+                // Smoothness comes from the mask (aggregate glints, polished racing line); detail maps add grit close up.
+                asphalt = SceneBuildUtility.LoadOrCreateLit("Asphalt", Color.white, 1f, 0f, new SceneBuildUtility.LitMaps
+                {
+                    baseMap = t.asphalt, normalMap = t.asphaltNormal, normalScale = 0.6f, metallicGlossMap = t.asphaltMask,
+                    detailAlbedoMap = t.asphaltDetail, detailNormalMap = t.asphaltDetailNormal, detailTiling = Vector2.one * 8f
+                }, MaterialFolder),
                 kerb = Lit("Kerb", Color.white, 0.45f, Maps(t.kerb)),
                 gravel = Lit("Gravel", Color.white, 0.08f, Maps(t.gravel, t.gravelNormal, 1f)),
-                barrier = Lit("Barrier", Color.white, 0.25f, Maps(t.barrier, t.concreteNormal, 0.4f)),
+                barrier = Lit("Barrier", Color.white, 1f, Maps(t.barrier, t.barrierNormal, 0.8f, t.barrierMask)),
                 paint = Lit("LinePaint", new Color(0.85f, 0.85f, 0.83f), 0.4f),
                 checker = Lit("Checker", Color.white, 0.4f, Maps(t.checker)),
                 metal = Lit("Metal", new Color(0.58f, 0.6f, 0.63f), 0.6f, metallic: 0.85f),
@@ -244,42 +257,78 @@ namespace RealisticCarRacing.EditorTools.Circuit
                 garage = Lit("Facade_Garage", Color.white, 1f, Maps(t.garageFacade, mask: t.garageMask)),
                 glass = Lit("Glass", new Color(0.3f, 0.38f, 0.46f), 0.95f, metallic: 0.5f),
                 bark = Lit("Bark", Color.white, 0.1f, Maps(t.bark), instancing: true),
-                leaves = Lit("Leaves", Color.white, 0.2f, Maps(t.leaves), instancing: true),
-                pineLeaves = Lit("LeavesPine", Color.white, 0.15f, Maps(t.pineLeaves), instancing: true)
+                leaves = Lit("Leaves", Color.white, 0.22f, Maps(t.leaves, t.leavesNormal, 1f), instancing: true),
+                lightLeaves = Lit("LeavesLight", Color.white, 0.22f, Maps(t.lightLeaves, t.leavesNormal, 1f), instancing: true),
+                pineLeaves = Lit("LeavesPine", Color.white, 0.15f, Maps(t.pineLeaves, t.leavesNormal, 0.7f), instancing: true),
+                fence = Lit("CatchFence", Color.white, 0.45f, Maps(t.fence), metallic: 0.6f)
             };
 
             // Open cone undersides are visible from the car, so foliage renders both faces.
-            foreach (var foliage in new[] { m.leaves, m.pineLeaves })
+            foreach (var foliage in new[] { m.leaves, m.lightLeaves, m.pineLeaves })
             {
                 foliage.SetFloat("_Cull", (float)CullMode.Off);
                 foliage.doubleSidedGI = true;
             }
+
+            // Chain-link: cut out by the texture's alpha, seen from both sides.
+            m.fence.SetFloat("_AlphaClip", 1f);
+            m.fence.SetFloat("_Cutoff", 0.5f);
+            m.fence.SetFloat("_Cull", (float)CullMode.Off);
+            BaseShaderGUI.SetupMaterialBlendMode(m.fence);
             return m;
         }
 
-        static void SetUpSunSkyAndFog(CircuitMaterials materials)
+        /// <summary>Afternoon sun, the cloud sky (also the ambient light and reflection source) and matching haze.</summary>
+        /// <summary>Where kerbs and gravel traps are, for surface sounds (same corner ranges as their meshes).</summary>
+        static void BakeSurfaces(GameObject trackRoot, RaceTrack track, TrackSample[] samples, TrackLayout layout)
+        {
+            var kerbs = new List<TrackSurfaces.Range>();
+            foreach (var (first, count, _) in TrackMeshBuilder.CornerRanges(samples, 1f / layout.kerbMaxRadius, padding: 8))
+                kerbs.Add(new TrackSurfaces.Range { first = first, count = count, side = 0f });
+            var gravel = new List<TrackSurfaces.Range>();
+            foreach (var (first, count, turnSign) in TrackMeshBuilder.CornerRanges(samples, 1f / layout.gravelMaxRadius, padding: 15))
+                gravel.Add(new TrackSurfaces.Range { first = first, count = count, side = turnSign > 0f ? 1f : -1f }); // outside of the turn
+            float gravelInner = layout.roadWidth * 0.5f + layout.kerbWidth + 0.4f; // as TrackMeshBuilder.GravelTraps
+            trackRoot.AddComponent<TrackSurfaces>().Bake(track, kerbs.ToArray(), gravel.ToArray(), layout.kerbWidth, gravelInner,
+                layout.runoffWidth - layout.kerbWidth - 1.4f);
+        }
+
+        static void SetUpSunSkyAndFog(Texture2D clouds)
         {
             var sun = Object.FindAnyObjectByType<Light>();
             sun.name = "Sun";
-            sun.transform.rotation = Quaternion.Euler(42f, 50f, 0f); // low afternoon sun from the south-west
-            sun.color = new Color(1f, 0.956f, 0.886f);
-            sun.intensity = 1.6f;
+            sun.transform.rotation = Quaternion.Euler(38f, 50f, 0f); // low afternoon sun from the south-west: long shadows
+            sun.color = new Color(1f, 0.94f, 0.85f);
+            sun.intensity = 1.9f;
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = 0.85f;
+            sun.shadowStrength = 0.9f;
 
+            var horizon = new Color(0.66f, 0.76f, 0.86f);
             string skyPath = $"Assets/Materials/{MaterialFolder}/Sky.mat";
             var sky = AssetDatabase.LoadAssetAtPath<Material>(skyPath);
+            var shader = Shader.Find("RealisticCarRacing/Sky");
             if (sky == null)
             {
-                sky = new Material(Shader.Find("Skybox/Procedural"));
+                sky = new Material(shader);
                 AssetDatabase.CreateAsset(sky, skyPath);
             }
-            sky.SetFloat("_SunSize", 0.035f);
-            sky.SetFloat("_SunSizeConvergence", 6f);
-            sky.SetFloat("_AtmosphereThickness", 0.95f);
-            sky.SetColor("_SkyTint", new Color(0.48f, 0.55f, 0.62f));
-            sky.SetColor("_GroundColor", new Color(0.42f, 0.44f, 0.4f));
-            sky.SetFloat("_Exposure", 1.2f);
+            sky.shader = shader; // values left over from an earlier sky shader are all overwritten below
+            sky.SetColor("_ZenithColor", new Color(0.16f, 0.34f, 0.68f));
+            sky.SetColor("_HorizonColor", horizon);
+            sky.SetColor("_GroundColor", new Color(0.4f, 0.42f, 0.4f));
+            sky.SetVector("_SunDirection", -sun.transform.forward);
+            sky.SetColor("_SunColor", sun.color);
+            sky.SetFloat("_SunSize", 0.99985f);
+            sky.SetFloat("_SunIntensity", 40f);
+            sky.SetFloat("_HaloIntensity", 0.35f);
+            sky.SetFloat("_HaloPower", 12f);
+            sky.SetTexture("_CloudTex", clouds);
+            sky.SetFloat("_CloudScale", 0.32f);
+            sky.SetFloat("_CloudCoverage", 0.42f);
+            sky.SetFloat("_CloudSoftness", 0.16f);
+            sky.SetColor("_CloudLitColor", Color.white);
+            sky.SetColor("_CloudShadeColor", new Color(0.58f, 0.63f, 0.7f));
+            sky.SetFloat("_Exposure", 1f);
             EditorUtility.SetDirty(sky);
 
             RenderSettings.skybox = sky;
@@ -287,10 +336,11 @@ namespace RealisticCarRacing.EditorTools.Circuit
             RenderSettings.ambientMode = AmbientMode.Skybox;
             RenderSettings.ambientIntensity = 1f;
             RenderSettings.defaultReflectionMode = DefaultReflectionMode.Skybox;
+            RenderSettings.reflectionIntensity = 1f;
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = new Color(0.7f, 0.77f, 0.84f);
-            RenderSettings.fogStartDistance = 350f;
+            RenderSettings.fogColor = horizon; // distant scenery fades into the sky's horizon colour
+            RenderSettings.fogStartDistance = 300f;
             RenderSettings.fogEndDistance = 2800f;
         }
 
@@ -491,7 +541,8 @@ namespace RealisticCarRacing.EditorTools.Circuit
             // Large chunks: fewer instanced draw calls; culling stays coarse but trees are cheap.
             const float spacing = 12f, chunkSize = 200f;
             var random = new System.Random(99);
-            var chunks = new[] { new Dictionary<Vector2Int, List<Matrix4x4>>(), new Dictionary<Vector2Int, List<Matrix4x4>>() };
+            // Variants: broad-leaf, rounded broad-leaf (lighter green) and pine.
+            var chunks = new[] { new Dictionary<Vector2Int, List<Matrix4x4>>(), new Dictionary<Vector2Int, List<Matrix4x4>>(), new Dictionary<Vector2Int, List<Matrix4x4>>() };
             treeCount = 0;
 
             for (float x = -SceneryRadius; x <= SceneryRadius; x += spacing)
@@ -509,7 +560,8 @@ namespace RealisticCarRacing.EditorTools.Circuit
                 if (footprints.Overlaps(point) || DistanceToTrack(samples, point) < layout.BarrierOffset + 8f)
                     continue;
 
-                int variant = Mathf.PerlinNoise(point.x * 0.01f + 7f, point.y * 0.01f + 7f) > 0.55f ? 1 : 0;
+                int variant = Mathf.PerlinNoise(point.x * 0.01f + 7f, point.y * 0.01f + 7f) > 0.55f ? 2
+                    : Mathf.PerlinNoise(point.x * 0.02f + 31f, point.y * 0.02f + 31f) > 0.55f ? 1 : 0;
                 float scale = Mathf.Lerp(0.8f, 1.35f, (float)random.NextDouble());
                 var matrix = Matrix4x4.TRS(new Vector3(point.x, 0f, point.y),
                     Quaternion.Euler(((float)random.NextDouble() - 0.5f) * 6f, (float)random.NextDouble() * 360f, 0f), Vector3.one * scale);
@@ -520,14 +572,16 @@ namespace RealisticCarRacing.EditorTools.Circuit
                 treeCount++;
             }
 
-            var meshes = new[] { SceneryMeshBuilder.DeciduousTree(), SceneryMeshBuilder.PineTree() };
-            var materials = new[] { Mats(m.bark, m.leaves), Mats(m.bark, m.pineLeaves) };
-            var scatters = new InstancedScatter[2];
+            var meshes = new[] { SceneryMeshBuilder.DeciduousTree(true), SceneryMeshBuilder.DeciduousTree(true, rounded: true), SceneryMeshBuilder.PineTree(true) };
+            var farMeshes = new[] { SceneryMeshBuilder.DeciduousTree(false), SceneryMeshBuilder.DeciduousTree(false, rounded: true), SceneryMeshBuilder.PineTree(false) };
+            var materials = new[] { Mats(m.bark, m.leaves), Mats(m.bark, m.lightLeaves), Mats(m.bark, m.pineLeaves) };
+            var scatters = new InstancedScatter[meshes.Length];
             var root = new GameObject("Trees").transform;
             root.SetParent(parent, false);
-            for (int variant = 0; variant < 2; variant++)
+            for (int variant = 0; variant < meshes.Length; variant++)
             {
                 var mesh = SaveMesh(meshes[variant]); // instanced: GPU data only
+                var farMesh = SaveMesh(farMeshes[variant]);
                 var bakedChunks = new List<InstancedScatter.Chunk>();
                 foreach (var list in chunks[variant].Values)
                 {
@@ -547,7 +601,7 @@ namespace RealisticCarRacing.EditorTools.Circuit
                 }
                 var scatter = new GameObject(mesh.name).AddComponent<InstancedScatter>();
                 scatter.transform.SetParent(root, false);
-                scatter.Configure(mesh, materials[variant], bakedChunks.ToArray());
+                scatter.Configure(mesh, materials[variant], bakedChunks.ToArray(), farMesh);
                 scatters[variant] = scatter;
             }
             return scatters;
@@ -573,6 +627,10 @@ namespace RealisticCarRacing.EditorTools.Circuit
             return mesh;
         }
 
+        /// <summary>
+        /// One profile for every preset (the same look everywhere): ACES tonemapping and grading in a single uber pass.
+        /// Bloom, its quality and motion blur are switched per preset by <see cref="EnvironmentQualityScaler"/>.
+        /// </summary>
         static Volume CreatePostProcessing()
         {
             const string path = "Assets/Settings/Circuit_PostProcess.asset";
@@ -583,17 +641,27 @@ namespace RealisticCarRacing.EditorTools.Circuit
             var tonemapping = profile.Add<Tonemapping>(true);
             tonemapping.mode.value = TonemappingMode.ACES;
             var colorAdjustments = profile.Add<ColorAdjustments>(true);
-            colorAdjustments.postExposure.value = 0.35f;
-            colorAdjustments.contrast.value = 10f;
-            colorAdjustments.saturation.value = 8f;
+            colorAdjustments.postExposure.value = 0.3f;
+            colorAdjustments.contrast.value = 12f;
+            colorAdjustments.saturation.value = 6f;
             var whiteBalance = profile.Add<WhiteBalance>(true);
             whiteBalance.temperature.value = 4f;
+            // Slightly cool shadows and warm highlights, as in afternoon sunlight.
+            var split = profile.Add<ShadowsMidtonesHighlights>(true);
+            split.shadows.value = new Vector4(0.97f, 0.99f, 1.04f, 0f);
+            split.highlights.value = new Vector4(1.03f, 1.01f, 0.97f, 0f);
             var bloom = profile.Add<Bloom>(true);
-            bloom.threshold.value = 1.1f;
-            bloom.intensity.value = 0.3f;
+            bloom.threshold.value = 1f;
+            bloom.intensity.value = 0.35f;
             bloom.scatter.value = 0.65f;
             var vignette = profile.Add<Vignette>(true);
             vignette.intensity.value = 0.18f;
+            // Camera-motion blur sells speed; it doesn't blur the car the camera follows.
+            var motionBlur = profile.Add<MotionBlur>(true);
+            motionBlur.mode.value = MotionBlurMode.CameraOnly;
+            motionBlur.quality.value = MotionBlurQuality.Low;
+            motionBlur.intensity.value = 0.25f;
+            motionBlur.clamp.value = 0.04f;
             foreach (var component in profile.components)
                 AssetDatabase.AddObjectToAsset(component, profile);
             EditorUtility.SetDirty(profile);
@@ -604,15 +672,60 @@ namespace RealisticCarRacing.EditorTools.Circuit
             return volume;
         }
 
-        static void CreateReflectionProbe(Vector3 center)
+        /// <summary>
+        /// Baked probes, which cost nothing per frame: one for the whole circuit, a box-projected one for the main
+        /// straight (pit building and grandstands reflected in the right place) and one every ~275 m round the lap,
+        /// so a car's paint reflects the part of the circuit it is on. (A real-time probe following the car was
+        /// measured and dropped: it doubled SetPass calls and caused 13 ms frame spikes on High.)
+        /// </summary>
+        static void CreateReflectionProbes(Vector3 center, RaceTrack track, TrackLayout layout)
         {
-            var probe = new GameObject("ReflectionProbe").AddComponent<ReflectionProbe>();
-            probe.transform.position = center + Vector3.up * 20f;
-            probe.mode = ReflectionProbeMode.Baked;
-            probe.size = new Vector3(1800f, 400f, 1400f);
-            probe.resolution = 256;
-            probe.hdr = true;
-            probe.boxProjection = false;
+            var global = new GameObject("ReflectionProbe").AddComponent<ReflectionProbe>();
+            global.transform.position = center + Vector3.up * 20f;
+            global.mode = ReflectionProbeMode.Baked;
+            global.size = new Vector3(1800f, 400f, 1400f);
+            global.resolution = 256;
+            global.hdr = true;
+            global.boxProjection = false;
+            global.importance = 0;
+
+            float spacing = track.Length / track.SampleCount;
+            var start = track.GetSample(0);
+            var bounds = new Bounds(start.position, Vector3.zero);
+            for (float d = -180f; d <= 180f; d += 10f)
+            {
+                var sample = track.GetSample(Mathf.RoundToInt(d / spacing));
+                foreach (float side in new[] { -1f, 1f })
+                    bounds.Encapsulate(sample.position + sample.right * (side * (layout.BarrierOffset + 30f)) + Vector3.up * 25f);
+            }
+            bounds.Encapsulate(start.position - Vector3.up);
+            var straight = new GameObject("ReflectionProbe_MainStraight").AddComponent<ReflectionProbe>();
+            straight.transform.position = start.position + Vector3.up * 1.5f; // capture from car height
+            straight.mode = ReflectionProbeMode.Baked;
+            straight.center = bounds.center - straight.transform.position;
+            straight.size = bounds.size;
+            straight.resolution = 128;
+            straight.hdr = true;
+            straight.boxProjection = true;
+            straight.blendDistance = 10f;
+            straight.importance = 2;
+
+            const float probeSpacing = 275f;
+            int probes = Mathf.FloorToInt((track.Length - 2f * 200f) / probeSpacing) + 1;
+            for (int i = 0; i < probes; i++)
+            {
+                var sample = track.GetSample(Mathf.RoundToInt((200f + i * probeSpacing) / spacing));
+                var probe = new GameObject($"ReflectionProbe_Lap_{i}").AddComponent<ReflectionProbe>();
+                probe.transform.position = sample.position + Vector3.up * 1.5f;
+                probe.mode = ReflectionProbeMode.Baked;
+                probe.center = Vector3.up * 20f;
+                probe.size = new Vector3(probeSpacing + 60f, 80f, probeSpacing + 60f);
+                probe.resolution = 128;
+                probe.hdr = true;
+                probe.boxProjection = true;
+                probe.blendDistance = 20f;
+                probe.importance = 1;
+            }
         }
 
         /// <summary>Bakes only the environment (sky ambient + reflection probe); all lighting stays real-time.</summary>

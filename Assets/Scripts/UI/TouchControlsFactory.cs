@@ -19,7 +19,7 @@ namespace RealisticCarRacing.UI
             public Canvas canvas;
             public TouchControlsVisibility visibility;
             public RectTransform steeringArea, steeringKnob;
-            public RectTransform throttle, brake, handbrake, shiftUp, shiftDown, toggleTransmission, reset, cameraButton;
+            public RectTransform throttle, brake, handbrake, shiftUp, shiftDown, toggleTransmission, reset, cameraButton, horn;
         }
 
         /// <param name="buttonSprite">Optional rounded sprite (the editor passes Unity's built-in UI sprite).</param>
@@ -68,6 +68,7 @@ namespace RealisticCarRacing.UI
             controls.cameraButton = CreateButton("Camera", "CAM", "<Gamepad>/rightStickPress", rootRect, topRight, new Vector2(-130f, -80f), new Vector2(200f, 100f), buttonSprite, font);
             controls.toggleTransmission = CreateButton("ToggleTransmission", "A / M", "<Gamepad>/buttonNorth", rootRect, topRight, new Vector2(-350f, -80f), new Vector2(200f, 100f), buttonSprite, font);
             controls.reset = CreateButton("Reset", "RESET", "<Gamepad>/select", rootRect, topRight, new Vector2(-570f, -80f), new Vector2(200f, 100f), buttonSprite, font);
+            controls.horn = CreateButton("Horn", "HORN", "<Gamepad>/leftStickPress", rootRect, topRight, new Vector2(-790f, -80f), new Vector2(200f, 100f), buttonSprite, font);
 
             controls.visibility = canvasObject.AddComponent<TouchControlsVisibility>();
             controls.visibility.Configure(root, visibility);

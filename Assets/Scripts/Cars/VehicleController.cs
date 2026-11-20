@@ -37,6 +37,13 @@ namespace RealisticCarRacing.Vehicles
         public Rigidbody Body => body;
         public IReadOnlyList<VehicleWheel> Wheels => wheels;
         public VehicleInputState CurrentInput { get; private set; }
+        /// <summary>Brake pedal actually applied this physics step (0..1), after reverse-gear pedal mapping. Drives the brake lights.</summary>
+        public float BrakeInput { get; private set; }
+        /// <summary>Accelerator actually applied to the engine this step, 0..1 (in reverse the brake pedal drives).</summary>
+        public float AppliedThrottle { get; private set; }
+        /// <summary>Engine output this step in N·m (negative while engine braking; 0 with the clutch open).</summary>
+        public float EngineTorque { get; private set; }
+        public bool IsRevLimited => engine.IsRevLimited;
 
         /// <summary>Speed along the car's forward axis in m/s; negative when moving backwards.</summary>
         public float ForwardSpeed => Vector3.Dot(body.linearVelocity, transform.forward);
@@ -180,12 +187,15 @@ namespace RealisticCarRacing.Vehicles
             float forwardSpeed = ForwardSpeed;
             transmission.Tick(dt);
             SelectGear(input, forwardSpeed, out float throttle, out float brake);
+            BrakeInput = brake;
+            AppliedThrottle = throttle;
 
             if (transmission.Mode == TransmissionMode.Automatic)
                 transmission.UpdateAutomatic(DrivetrainRpm());
 
             bool clutchEngaged = transmission.Gear != VehicleTransmission.Neutral && !transmission.IsShifting;
             float engineTorque = engine.Update(throttle, DrivetrainRpm(), clutchEngaged, transmission.IsShifting, dt);
+            EngineTorque = engineTorque;
             float wheelTorque = engineTorque * transmission.OverallRatio * settings.drivetrainEfficiency / Mathf.Max(1, drivenWheelCount);
 
             if (throttle > 0f && body.IsSleeping())

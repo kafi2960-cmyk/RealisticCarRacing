@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9271a1c032ac043fd910800eeafc7894, type: 3}
+  m_Name: CarVisualKit
+  m_EditorClassIdentifier: RealisticCarRacing::RealisticCarRacing.Vehicles.CarVisualKit
+  tyre: {fileID: 4300000, guid: b03f59f5e4db24793a9978ca47bca252, type: 2}
+  tyreLow: {fileID: 4300000, guid: 2833cb7c8ff7e44ffb508546ddc04a4e, type: 2}
+  rim: {fileID: 4300000, guid: f61ee6371d01c4aac85cd89a58d875ac, type: 2}
+  brakeDisc: {fileID: 4300000, guid: 50201059b74de457bad06a8318a705e0, type: 2}
+  caliper: {fileID: 4300000, guid: d234ffc8a65764f069cdcd8c91745855, type: 2}
+  greenhouseGlass: {fileID: 4300000, guid: 6a858f59e6d1c4101a0d6bc9fd73d43a, type: 2}
+  greenhouseFrame: {fileID: 4300000, guid: aa2b80d5ee17848a69a00fab7ece8222, type: 2}
+  tyreRubber: {fileID: 2100000, guid: 1aeea34c22e81467dbc431b3583e0066, type: 2}
+  rimMetal: {fileID: 2100000, guid: 69ae2dcde64c84d0da910605a6dd6315, type: 2}
+  brakeDiscMetal: {fileID: 2100000, guid: e63c0af6df0b3499c882657e7336da0e, type: 2}
+  caliperPaint: {fileID: 2100000, guid: 02002f49f1ff04a67be85bd55faa651c, type: 2}
+  glass: {fileID: 2100000, guid: 38f8695bf58a9438f8c9506216b286d8, type: 2}
+  leather: {fileID: 2100000, guid: 1a58d74865361499e96d207aa78c7fec, type: 2}
+  plastic: {fileID: 2100000, guid: 51a9130a9f4014436bd1c4d1153d1ceb, type: 2}
+  headliner: {fileID: 2100000, guid: 961279578a35f4f42b651d33b14578d9, type: 2}
+  gaugeFace: {fileID: 2100000, guid: 749e4f1afaa194662a1bc1459fb17d1f, type: 2}
+  gaugeNeedle: {fileID: 2100000, guid: 5256e6b7daea04586b583b22c7105a5f, type: 2}
+  screen: {fileID: 2100000, guid: af66f6dd5acf94e0a9ae44ae4390d5e3, type: 2}
+  wheelDesigns:
+  - id: split10
+    displayName: Split 10-Spoke
+    finishName: Machined silver
+    rim: {fileID: 4300000, guid: f61ee6371d01c4aac85cd89a58d875ac, type: 2}
+    finish: {fileID: 2100000, guid: 69ae2dcde64c84d0da910605a6dd6315, type: 2}
+  - id: yspoke
+    displayName: Forged Y-Spoke
+    finishName: Gloss black
+    rim: {fileID: 4300000, guid: 0b4839dae185445aca9d4020344b15c5, type: 2}
+    finish: {fileID: 2100000, guid: efb4332037e23421da40935cf3f39e9d, type: 2}
+  - id: crossspoke
+    displayName: Cross-Spoke Mesh
+    finishName: Gunmetal
+    rim: {fileID: 4300000, guid: 90bacf243798e43298f53cd761f88c97, type: 2}
+    finish: {fileID: 2100000, guid: 1b477a01a0ca0461aa4a4a88a51fb6fe, type: 2}
+  - id: turbine
+    displayName: Turbine 7-Spoke
+    finishName: Satin bronze
+    rim: {fileID: 4300000, guid: 838b96115248b4b7d871eaeb2d8e8e04, type: 2}
+    finish: {fileID: 2100000, guid: 91ca90574acbf41b8aa117ebcfccc551, type: 2}
+  headlight: {fileID: 2100000, guid: e2b9fd59915a942fba675867fc3f84a3, type: 2}
+  tailLight: {fileID: 2100000, guid: 854e0e66e00d44aeaa60c8c9adfe12df, type: 2}
+  brakeLight: {fileID: 2100000, guid: dc30280cb88e142a49a5fbb78480a177, type: 2}
+  reverseLightOff: {fileID: 2100000, guid: 03e4e2951c00a462594b2cc255473b19, type: 2}
+  reverseLightOn: {fileID: 2100000, guid: aa5fd62813c784245910fb5b74829c44, type: 2}

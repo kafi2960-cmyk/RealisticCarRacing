@@ -179,7 +179,8 @@ namespace RealisticCarRacing.Tests
                 Assert.That(mounts.InteriorVisible, Is.False, $"{racer.Name} interior hidden");
                 Assert.That(racer.Vehicle.GetComponent<LODGroup>(), Is.Not.Null);
                 int interiorRenderers = racer.Vehicle.transform.Find("Interior").GetComponentsInChildren<MeshRenderer>().Length;
-                Assert.That(interiorRenderers, Is.LessThanOrEqualTo(4), "interior merged into a few renderers");
+                // ~35 pieces become one renderer per trim material (5), the steering wheel (2) and the two moving needles.
+                Assert.That(interiorRenderers, Is.LessThanOrEqualTo(9), "interior merged into a few renderers");
             }
             Object.FindAnyObjectByType<VehicleCameraRig>().SetView(CameraView.Cockpit);
             Assert.That(manager.Player.Vehicle.GetComponent<Vehicles.VehicleCameraMounts>().InteriorVisible, Is.True);

@@ -25,7 +25,17 @@ MonoBehaviour:
   - {r: 0.95, g: 0.45, b: 0.05, a: 1}
   - {r: 0.45, g: 0.1, b: 0.55, a: 1}
   - {r: 0.1, g: 0.6, b: 0.75, a: 1}
-  bodyMaterial: {fileID: 2100000, guid: bc080caa10b87436da5f3d32e20d6470, type: 2}
+  paintNames:
+  - Strada Yellow
+  - Pearl White
+  - Obsidian Black
+  - Titanium Silver
+  - Racing Green
+  - Sunset Orange
+  - Royal Purple
+  - Lagoon Blue
+  bodyMaterial: {fileID: 2100000, guid: 214426b91c4c1419baa7811fa6c6a6b5, type: 2}
   cabinMaterial: {fileID: 2100000, guid: 471bd142489b44728880eb8c7c528a20, type: 2}
   tyreMaterial: {fileID: 2100000, guid: 46642bedacc5c43279cc819be2ee7e9f, type: 2}
   markerMaterial: {fileID: 2100000, guid: f50aa6337b86248f7bf9eeef1fccda17, type: 2}
+  visualKit: {fileID: 11400000, guid: 100336e1167a84d4f83f9e4f10a8a3ff, type: 2}

@@ -77,9 +77,10 @@ namespace RealisticCarRacing.EditorTools
                 time.ApplyModifiedPropertiesWithoutUndo();
             }
 
-            // Audio: fewer voices than the defaults (the game has no audio assets yet; see AudioImportRules for clips).
+            // Audio: 32 real voices covers the player's car (~14 sources), the nearest rivals and the UI; quieter, lower
+            // priority voices beyond that are virtualised (tracked but not mixed), which keeps phone CPU cost bounded.
             var audio = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/AudioManager.asset")[0]);
-            audio.FindProperty("m_RealVoiceCount").intValue = 24;
+            audio.FindProperty("m_RealVoiceCount").intValue = 32;
             audio.FindProperty("m_VirtualVoiceCount").intValue = 64;
             audio.FindProperty("m_DSPBufferSize").intValue = 1024; // "Good latency": lower CPU cost than "Best latency"
             audio.ApplyModifiedPropertiesWithoutUndo();

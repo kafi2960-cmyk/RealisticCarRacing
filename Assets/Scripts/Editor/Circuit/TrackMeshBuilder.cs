@@ -70,6 +70,21 @@ namespace RealisticCarRacing.EditorTools.Circuit
             return builder.ToMesh(name);
         }
 
+        /// <summary>
+        /// Debris fences standing on both barriers: a 2.4 m sheet along the barrier crest (texture U up the fence,
+        /// V along it in <paramref name="vTile"/> metre panels, one post per panel).
+        /// </summary>
+        public static Mesh Fences(TrackSample[] samples, float length, TrackLayout layout, float vTile, int first = 0, int count = -1, string name = "Fences")
+        {
+            const float crest = 0.34f, height = 2.4f; // middle of the barrier's flat top (see BarrierSection)
+            var section = Section.WithLengthU(new[] { new Vector2(crest, layout.barrierHeight - 0.02f), new Vector2(crest, layout.barrierHeight + height) });
+            var builder = new MeshBuilder();
+            bool closed = count < 0;
+            foreach (float side in new[] { -1f, 1f })
+                Extrude(builder, 0, samples, length, first, closed ? samples.Length : count, closed, section, layout.BarrierOffset, side, vTile);
+            return builder.ToMesh(name);
+        }
+
         /// <summary>One mesh per kerbed corner (render chunks; <see cref="Kerbs"/> is the combined collider).</summary>
         public static List<Mesh> KerbPieces(TrackSample[] samples, float length, TrackLayout layout)
         {

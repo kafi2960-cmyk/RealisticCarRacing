@@ -26,10 +26,12 @@ namespace RealisticCarRacing.UI
         Text completionPosition, completionDetails, completionRecords, resultsStatus;
         Button resumeButton, resultsButton, resultsRestartButton;
         GraphicsSettingsPanel settings;
+        AudioSettingsPanel audioSettings;
         float resultsTimer;
 
         public GameObject PausePanel { get; private set; }
         public GameObject SettingsPanel { get; private set; }
+        public GameObject AudioPanel { get; private set; }
         public GameObject CompletionPanel { get; private set; }
         public GameObject ResultsPanel { get; private set; }
 
@@ -44,7 +46,7 @@ namespace RealisticCarRacing.UI
                 // Escape is already Pause; Back here is the gamepad "B" to leave the pause menu.
                 if (context.control.device is Keyboard || !race.IsPaused)
                     return;
-                if (SettingsPanel.activeSelf)
+                if (SettingsPanel.activeSelf || AudioPanel.activeSelf)
                     HideSettings();
                 else
                     race.SetPaused(false);
@@ -85,16 +87,21 @@ namespace RealisticCarRacing.UI
             var canvas = UiFactory.Canvas("RaceMenus", 20);
             canvas.transform.SetParent(transform, false);
 
-            PausePanel = Panel(canvas.transform, "PausePanel", new Vector2(640f, 660f), out var pauseBox);
+            PausePanel = Panel(canvas.transform, "PausePanel", new Vector2(640f, 760f), out var pauseBox);
             Title(pauseBox, "PAUSED", race.Race.displayName);
             resumeButton = UiFactory.Button(pauseBox, "RESUME", () => race.SetPaused(false));
             UiFactory.Button(pauseBox, "RESTART", race.Restart);
             UiFactory.Button(pauseBox, "SETTINGS", ShowSettings);
+            UiFactory.Button(pauseBox, "AUDIO", ShowAudio);
             UiFactory.Button(pauseBox, "MAIN MENU", race.QuitToMenu);
 
             SettingsPanel = Panel(canvas.transform, "SettingsPanel", new Vector2(760f, 860f), out var settingsBox);
             Title(settingsBox, "GRAPHICS", "Changes apply immediately");
             settings = GraphicsSettingsPanel.Build(settingsBox, HideSettings);
+
+            AudioPanel = Panel(canvas.transform, "AudioPanel", new Vector2(760f, 860f), out var audioBox);
+            Title(audioBox, "AUDIO", "Changes apply immediately");
+            audioSettings = AudioSettingsPanel.Build(audioBox, HideSettings);
 
             CompletionPanel = Panel(canvas.transform, "CompletionPanel", new Vector2(760f, 700f), out var completionBox);
             Title(completionBox, "FINISHED", race.Race.displayName);
@@ -123,6 +130,7 @@ namespace RealisticCarRacing.UI
 
             PausePanel.SetActive(false);
             SettingsPanel.SetActive(false);
+            AudioPanel.SetActive(false);
             CompletionPanel.SetActive(false);
             ResultsPanel.SetActive(false);
         }
@@ -191,6 +199,7 @@ namespace RealisticCarRacing.UI
         {
             PausePanel.SetActive(paused);
             SettingsPanel.SetActive(false);
+            AudioPanel.SetActive(false);
             if (paused)
                 Select(resumeButton);
         }
@@ -202,9 +211,17 @@ namespace RealisticCarRacing.UI
             Select(settings.FirstSelectable);
         }
 
+        void ShowAudio()
+        {
+            PausePanel.SetActive(false);
+            AudioPanel.SetActive(true);
+            Select(audioSettings.FirstSelectable);
+        }
+
         void HideSettings()
         {
             SettingsPanel.SetActive(false);
+            AudioPanel.SetActive(false);
             PausePanel.SetActive(race.IsPaused);
             if (race.IsPaused)
                 Select(resumeButton);

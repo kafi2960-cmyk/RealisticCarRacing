@@ -66,6 +66,7 @@ namespace RealisticCarRacing.Controls
                 Brake = brake.Value,
                 Steer = steer.Value,
                 Handbrake = actions.Handbrake.IsPressed(),
+                Horn = actions.Horn.IsPressed(),
                 ShiftUp = shiftUpRequested,
                 ShiftDown = shiftDownRequested,
                 ToggleTransmission = toggleTransmissionRequested,

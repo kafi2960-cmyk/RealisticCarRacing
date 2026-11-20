@@ -74,18 +74,23 @@ namespace RealisticCarRacing.Tests
             Assert.That(menu.Current, Is.EqualTo(MainMenuController.Screen.Main));
             Assert.That(showroom.CurrentCar, Is.Not.Null, "showroom shows the selected car");
 
-            // Garage from the main menu: paint and setup are saved and shown on the turntable.
+            // Garage from the main menu: paint, wheels and setup are saved and shown on the turntable.
             Click("Button GARAGE");
             yield return null;
             Assert.That(menu.Current, Is.EqualTo(MainMenuController.Screen.Garage));
             Click("Paint 3");
+            Click("Tab WHEELS");
+            Click("Wheels 2");
+            Click("Tab SETUP");
             Click("Tuning Grip");
             yield return null;
             var setup = GameSession.SelectedSetup;
             Assert.That(setup.paint, Is.EqualTo(3));
+            Assert.That(setup.wheels, Is.EqualTo(2));
             Assert.That(setup.tuning, Is.EqualTo(Vehicles.TuningPreset.Grip));
             Color shown = showroom.ShownPaint, chosen = GameSession.SelectedCar.Paint(3);
             Assert.That(Vector4.Distance(shown, chosen), Is.LessThan(0.001f), "showroom car wears the chosen paint");
+            Assert.That(showroom.ShownRim, Is.SameAs(GameSession.SelectedCar.visualKit.wheelDesigns[2].rim), "and the chosen wheels");
             Click("Button BACK");
             yield return null;
             Assert.That(menu.Current, Is.EqualTo(MainMenuController.Screen.Main));
@@ -101,13 +106,15 @@ namespace RealisticCarRacing.Tests
             yield return null;
             Click("Race grand_prix");
             yield return null;
-            Assert.That(menu.Current, Is.EqualTo(MainMenuController.Screen.CarSelect));
+            Assert.That(menu.Current, Is.EqualTo(MainMenuController.Screen.Garage), "choosing a race opens the garage");
             Assert.That(GameSession.SelectedRace.id, Is.EqualTo("grand_prix"));
 
-            // Car select: next/previous, and the garage round trip.
+            // Vehicle selection: next/previous, wrapping round; each car keeps its own setup.
             Click("NextCar");
             yield return null;
             Assert.That(GameSession.SelectedCar, Is.EqualTo(catalog.cars[1]));
+            Assert.That(showroom.CurrentDefinition, Is.EqualTo(catalog.cars[1]), "the turntable shows the selected car");
+            Assert.That(GameSession.SelectedSetup.wheels, Is.EqualTo(0), "another car starts with its factory wheels");
             Click("PrevCar");
             Click("PrevCar");
             yield return null;
@@ -116,15 +123,9 @@ namespace RealisticCarRacing.Tests
             Click("NextCar");
             yield return null;
             Assert.That(GameSession.SelectedCar, Is.EqualTo(catalog.cars[1]));
-            Click("Button GARAGE");
-            yield return null;
-            Assert.That(menu.Current, Is.EqualTo(MainMenuController.Screen.Garage));
             Click("Button BACK");
             yield return null;
-            Assert.That(menu.Current, Is.EqualTo(MainMenuController.Screen.CarSelect));
-            Click("Button BACK");
-            yield return null;
-            Assert.That(menu.Current, Is.EqualTo(MainMenuController.Screen.RaceSelect));
+            Assert.That(menu.Current, Is.EqualTo(MainMenuController.Screen.RaceSelect), "back to where the garage was opened from");
             Click("Button BACK");
             yield return null;
             Click("Button QUIT");

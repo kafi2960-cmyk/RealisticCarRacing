@@ -15,13 +15,13 @@ namespace RealisticCarRacing.EditorTools.Circuit
 
         public sealed class Set
         {
-            public Texture2D asphalt, asphaltNormal;
+            public Texture2D asphalt, asphaltNormal, asphaltMask, asphaltDetail, asphaltDetailNormal;
             public Texture2D grassMacro, grassDetail, grassNormal;
             public Texture2D gravel, gravelNormal;
             public Texture2D concrete, concreteNormal;
-            public Texture2D barrier, kerb, checker;
+            public Texture2D barrier, barrierNormal, barrierMask, kerb, checker, fence, clouds;
             public Texture2D officeFacade, residentialFacade, garageFacade, officeMask, residentialMask, garageMask;
-            public Texture2D roof, crowd, bark, leaves, pineLeaves;
+            public Texture2D roof, crowd, bark, leaves, lightLeaves, pineLeaves, leavesNormal;
         }
 
         /// <param name="barrierPaintedFraction">Fraction of the barrier profile (U) on the track-facing side that is painted.</param>
@@ -31,8 +31,11 @@ namespace RealisticCarRacing.EditorTools.Circuit
             SceneBuildUtility.EnsureFolder(Folder);
             return new Set
             {
-                asphalt = Get("Asphalt", 1024, TextureKind.Color, (size, px) => Asphalt(size, px, roadWidth)),
-                asphaltNormal = Get("Asphalt_Normal", 1024, TextureKind.Normal, (size, px) => HeightToNormal(size, px, AsphaltHeight, 2.5f)),
+                asphalt = Get("Asphalt_v2", 1024, TextureKind.Color, (size, px) => Asphalt(size, px, roadWidth)),
+                asphaltNormal = Get("Asphalt_Normal_v2", 1024, TextureKind.Normal, (size, px) => HeightToNormal(size, px, (u, v) => AsphaltHeight(u, v, roadWidth), 3.5f)),
+                asphaltMask = Get("Asphalt_Mask", 512, TextureKind.Linear, (size, px) => AsphaltMask(size, px, roadWidth)),
+                asphaltDetail = Get("Asphalt_Detail", 256, TextureKind.Linear, AsphaltDetail),
+                asphaltDetailNormal = Get("Asphalt_DetailNormal", 256, TextureKind.Normal, (size, px) => HeightToNormal(size, px, AsphaltDetailHeight, 2f)),
                 grassMacro = Get("Grass_Macro", 256, TextureKind.Color, GrassMacro),
                 grassDetail = Get("Grass_Detail", 512, TextureKind.Color, GrassDetail),
                 grassNormal = Get("Grass_Normal", 512, TextureKind.Normal, (size, px) => HeightToNormal(size, px, GrassHeight, 1.5f)),
@@ -40,7 +43,11 @@ namespace RealisticCarRacing.EditorTools.Circuit
                 gravelNormal = Get("Gravel_Normal", 512, TextureKind.Normal, (size, px) => HeightToNormal(size, px, GravelHeight, 4f)),
                 concrete = Get("Concrete", 512, TextureKind.Color, Concrete),
                 concreteNormal = Get("Concrete_Normal", 512, TextureKind.Normal, (size, px) => HeightToNormal(size, px, ConcreteHeight, 1f)),
-                barrier = Get("Barrier", 512, TextureKind.Color, (size, px) => Barrier(size, px, barrierPaintedFraction)),
+                barrier = Get("Barrier_v2", 512, TextureKind.Color, (size, px) => Barrier(size, px, barrierPaintedFraction)),
+                barrierNormal = Get("Barrier_Normal", 512, TextureKind.Normal, (size, px) => HeightToNormal(size, px, (u, v) => BarrierHeight(u, v, barrierPaintedFraction), 1.5f)),
+                barrierMask = Get("Barrier_Mask", 256, TextureKind.Linear, (size, px) => BarrierMask(size, px, barrierPaintedFraction)),
+                fence = Get("CatchFence", 512, TextureKind.ColorAlphaTest, CatchFence),
+                clouds = Get("Clouds", 512, TextureKind.Linear, Clouds),
                 kerb = Get("Kerb", 256, TextureKind.Color, Kerb),
                 checker = Get("Checker", 64, TextureKind.ColorPoint, Checker),
                 officeFacade = Get("Facade_Office", 512, TextureKind.Color, (size, px) => Facade(size, px, 4, 4, 0.78f, 0.7f, new Color(0.78f, 0.78f, 0.76f))),
@@ -52,23 +59,29 @@ namespace RealisticCarRacing.EditorTools.Circuit
                 roof = Get("Roof", 256, TextureKind.Color, Roof),
                 crowd = Get("Grandstand_Crowd", 256, TextureKind.Color, Crowd),
                 bark = Get("Bark", 128, TextureKind.Color, Bark),
-                leaves = Get("Leaves", 256, TextureKind.Color, (size, px) => Leaves(size, px, new Color(0.22f, 0.36f, 0.12f))),
-                pineLeaves = Get("Leaves_Pine", 256, TextureKind.Color, (size, px) => Leaves(size, px, new Color(0.12f, 0.26f, 0.13f)))
+                leaves = Get("Leaves_v2", 256, TextureKind.Color, (size, px) => Leaves(size, px, new Color(0.2f, 0.33f, 0.11f), 131)),
+                lightLeaves = Get("Leaves_Light", 256, TextureKind.Color, (size, px) => Leaves(size, px, new Color(0.31f, 0.41f, 0.14f), 141)),
+                pineLeaves = Get("Leaves_Pine_v2", 256, TextureKind.Color, (size, px) => Leaves(size, px, new Color(0.1f, 0.21f, 0.11f), 151)),
+                leavesNormal = Get("Leaves_Normal", 256, TextureKind.Normal, (size, px) => HeightToNormal(size, px, (u, v) => LeafHeight(u, v, 131), 3f))
             };
         }
 
-        enum TextureKind { Color, ColorPoint, Linear, Normal }
+        internal enum TextureKind { Color, ColorPoint, Linear, Normal, ColorAlphaTest }
 
-        static Texture2D Get(string name, int size, TextureKind kind, Action<int, Color[]> generate)
+        static Texture2D Get(string name, int size, TextureKind kind, Action<int, Color[]> generate) => Get(Folder, name, size, kind, generate);
+
+        /// <summary>Loads <paramref name="folder"/>/<paramref name="name"/>.png, generating and importing it first if missing.</summary>
+        internal static Texture2D Get(string folder, string name, int size, TextureKind kind, Action<int, Color[]> generate)
         {
-            string path = $"{Folder}/{name}.png";
+            SceneBuildUtility.EnsureFolder(folder);
+            string path = $"{folder}/{name}.png";
             if (File.Exists(path) && AssetImporter.GetAtPath(path) is TextureImporter existing && !existing.streamingMipmaps)
                 ConfigureImporter(path, size, kind); // upgrade textures generated before mip streaming was enabled
             if (!File.Exists(path))
             {
                 var pixels = new Color[size * size];
                 generate(size, pixels);
-                var texture = new Texture2D(size, size, TextureFormat.RGBA32, false, kind != TextureKind.Color && kind != TextureKind.ColorPoint);
+                var texture = new Texture2D(size, size, TextureFormat.RGBA32, false, kind == TextureKind.Linear || kind == TextureKind.Normal);
                 texture.SetPixels(pixels);
                 File.WriteAllBytes(path, texture.EncodeToPNG());
                 UnityEngine.Object.DestroyImmediate(texture);
@@ -82,7 +95,11 @@ namespace RealisticCarRacing.EditorTools.Circuit
         {
             var importer = (TextureImporter)AssetImporter.GetAtPath(path);
             importer.textureType = kind == TextureKind.Normal ? TextureImporterType.NormalMap : TextureImporterType.Default;
-            importer.sRGBTexture = kind == TextureKind.Color || kind == TextureKind.ColorPoint;
+            importer.sRGBTexture = kind == TextureKind.Color || kind == TextureKind.ColorPoint || kind == TextureKind.ColorAlphaTest;
+            // Cut-out textures keep their coverage in smaller mips, so thin wires don't fade away with distance.
+            importer.alphaIsTransparency = kind == TextureKind.ColorAlphaTest;
+            importer.mipMapsPreserveCoverage = kind == TextureKind.ColorAlphaTest;
+            importer.alphaTestReferenceValue = 0.5f;
             importer.wrapMode = TextureWrapMode.Repeat;
             importer.mipmapEnabled = true;
             importer.filterMode = kind == TextureKind.ColorPoint ? FilterMode.Point : FilterMode.Trilinear;
@@ -110,7 +127,7 @@ namespace RealisticCarRacing.EditorTools.Circuit
         // ---------- Noise ----------
 
         /// <summary>Tileable value noise: the lattice wraps every <paramref name="period"/> cells.</summary>
-        static float ValueNoise(float x, float y, int period, int seed)
+        internal static float ValueNoise(float x, float y, int period, int seed)
         {
             int xi = Mathf.FloorToInt(x), yi = Mathf.FloorToInt(y);
             float xf = x - xi, yf = y - yi;
@@ -120,7 +137,7 @@ namespace RealisticCarRacing.EditorTools.Circuit
             return Mathf.Lerp(Mathf.Lerp(a, b, u), Mathf.Lerp(c, d, u), v);
         }
 
-        static float Hash(int x, int y, int period, int seed)
+        internal static float Hash(int x, int y, int period, int seed)
         {
             x = ((x % period) + period) % period;
             y = ((y % period) + period) % period;
@@ -133,7 +150,7 @@ namespace RealisticCarRacing.EditorTools.Circuit
         }
 
         /// <summary>Fractal noise over a texture in 0..1 UV space; tiles seamlessly.</summary>
-        static float Fbm(float u, float v, int baseFrequency, int octaves, int seed, float persistence = 0.5f)
+        internal static float Fbm(float u, float v, int baseFrequency, int octaves, int seed, float persistence = 0.5f)
         {
             float sum = 0f, amplitude = 1f, total = 0f;
             int frequency = baseFrequency;
@@ -147,14 +164,14 @@ namespace RealisticCarRacing.EditorTools.Circuit
             return sum / total;
         }
 
-        static void ForEach(int size, Color[] pixels, Func<float, float, Color> shade)
+        internal static void ForEach(int size, Color[] pixels, Func<float, float, Color> shade)
         {
             for (int y = 0; y < size; y++)
             for (int x = 0; x < size; x++)
                 pixels[y * size + x] = shade((x + 0.5f) / size, (y + 0.5f) / size);
         }
 
-        static void HeightToNormal(int size, Color[] pixels, Func<float, float, float> height, float strength)
+        internal static void HeightToNormal(int size, Color[] pixels, Func<float, float, float> height, float strength)
         {
             var heights = new float[size * size];
             for (int y = 0; y < size; y++)
@@ -171,34 +188,91 @@ namespace RealisticCarRacing.EditorTools.Circuit
             }
         }
 
-        static float Grain(float u, float v, int frequency, int seed) => Hash(Mathf.FloorToInt(u * frequency), Mathf.FloorToInt(v * frequency), frequency, seed);
+        internal static float Grain(float u, float v, int frequency, int seed) => Hash(Mathf.FloorToInt(u * frequency), Mathf.FloorToInt(v * frequency), frequency, seed);
 
         // ---------- Surfaces ----------
 
-        static float AsphaltHeight(float u, float v) => Fbm(u, v, 64, 3, 11) * 0.5f + Grain(u, v, 512, 12) * 0.5f;
+        // Road texture: U spans the full road width, V one square tile along it (so one texel ~1.2 cm).
 
-        /// <summary>Road texture: U spans the full road width, V one square tile along it. Edge lines are painted in.</summary>
-        static void Asphalt(int size, Color[] pixels, float roadWidth)
+        static bool IsEdgeLine(float u, float roadWidth)
         {
             float lineInset = 0.3f / roadWidth, lineWidth = 0.22f / roadWidth;
-            ForEach(size, pixels, (u, v) =>
-            {
-                float patches = Fbm(u, v, 4, 3, 3);
-                float aggregate = Grain(u, v, 512, 5);
-                float tone = 0.16f + patches * 0.07f + (aggregate > 0.93f ? 0.12f : aggregate < 0.05f ? -0.05f : 0f);
-                // Rubbered-in driving lines are slightly darker.
-                float rubber = Mathf.Exp(-Mathf.Pow((Mathf.Abs(u - 0.5f) - 0.2f) / 0.08f, 2f)) * 0.03f;
-                var color = new Color(tone - rubber, tone - rubber, tone * 1.04f - rubber, 1f);
-
-                float edge = Mathf.Min(u, 1f - u);
-                if (edge > lineInset && edge < lineInset + lineWidth)
-                {
-                    float wear = Fbm(u, v, 32, 2, 9);
-                    color = Color.Lerp(new Color(0.82f, 0.82f, 0.8f), color, wear > 0.72f ? 0.6f : 0.05f);
-                }
-                return color;
-            });
+            float edge = Mathf.Min(u, 1f - u);
+            return edge > lineInset && edge < lineInset + lineWidth;
         }
+
+        /// <summary>Resurfaced rectangles: a coarse grid of cells, some patched with newer, darker asphalt.</summary>
+        static bool IsRepairPatch(float u, float v, out float border)
+        {
+            int cu = Mathf.FloorToInt(u * 3f), cv = Mathf.FloorToInt(v * 4f);
+            border = 1f;
+            if (Hash(cu, cv, 4096, 7) > 0.22f)
+                return false;
+            float fu = u * 3f - cu, fv = v * 4f - cv;
+            float w = 0.15f + Hash(cu, cv, 4096, 8) * 0.25f, l = 0.2f + Hash(cu, cv, 4096, 9) * 0.5f;
+            float du = Mathf.Abs(fu - 0.5f), dv = Mathf.Abs(fv - 0.5f);
+            border = Mathf.Min(w - du, l - dv);
+            return du < w && dv < l;
+        }
+
+        /// <summary>Thin meandering cracks from ridged noise.</summary>
+        static float Crack(float u, float v) => Mathf.Abs(Fbm(u, v, 8, 3, 13) - 0.5f) < 0.006f ? 1f : 0f;
+
+        /// <summary>Darker rubbered-in band where cars drive.</summary>
+        static float Rubber(float u) => Mathf.Exp(-Mathf.Pow((Mathf.Abs(u - 0.5f) - 0.17f) / 0.1f, 2f));
+
+        static float AsphaltHeight(float u, float v, float roadWidth)
+        {
+            float stones = Mathf.Pow(Grain(u, v, 512, 12), 3f);
+            float fine = Grain(u, v, 1024, 14);
+            float h = Fbm(u, v, 64, 3, 11) * 0.3f + stones * 0.5f + fine * 0.2f;
+            if (IsRepairPatch(u, v, out float border))
+                h = h * 0.6f + 0.25f + (border < 0.01f ? -0.3f : 0f);
+            h -= Crack(u, v) * 0.6f;
+            if (IsEdgeLine(u, roadWidth))
+                h = h * 0.3f + 0.45f; // paint fills the texture
+            return h;
+        }
+
+        static void Asphalt(int size, Color[] pixels, float roadWidth) => ForEach(size, pixels, (u, v) =>
+        {
+            float patches = Fbm(u, v, 4, 3, 3);
+            float stones = Grain(u, v, 512, 12);
+            float tone = 0.15f + patches * 0.06f + (stones > 0.9f ? 0.1f : stones < 0.06f ? -0.04f : 0f) + (Grain(u, v, 1024, 14) - 0.5f) * 0.03f;
+            if (IsRepairPatch(u, v, out float border))
+                tone = border < 0.01f ? 0.05f : 0.11f + (stones > 0.92f ? 0.05f : 0f); // fresh patch with a sealed seam
+            tone -= Rubber(u) * 0.035f;
+            tone -= Crack(u, v) * 0.07f;
+            float oil = Mathf.SmoothStep(0.72f, 0.8f, Fbm(u, v, 6, 2, 15)) * Rubber(u) * 0.04f;
+            var color = new Color(tone - oil, tone - oil, tone * 1.04f - oil, 1f);
+
+            if (IsEdgeLine(u, roadWidth))
+            {
+                float wear = Fbm(u, v, 32, 2, 9);
+                color = Color.Lerp(new Color(0.78f, 0.78f, 0.76f), color, wear > 0.7f ? 0.65f : 0.04f);
+            }
+            return color;
+        });
+
+        /// <summary>Metallic (R, always 0) and smoothness (A): aggregate glints, polished racing line, glossier paint.</summary>
+        static void AsphaltMask(int size, Color[] pixels, float roadWidth) => ForEach(size, pixels, (u, v) =>
+        {
+            float smoothness = 0.16f + Rubber(u) * 0.14f + (Grain(u, v, 256, 12) > 0.88f ? 0.25f : 0f);
+            if (IsRepairPatch(u, v, out _))
+                smoothness += 0.06f;
+            if (IsEdgeLine(u, roadWidth))
+                smoothness = 0.42f;
+            return new Color(0f, 0f, 0f, smoothness);
+        });
+
+        /// <summary>Close-up detail (multiplied ×2, so 0.5 is neutral): millimetre-scale grit.</summary>
+        static void AsphaltDetail(int size, Color[] pixels) => ForEach(size, pixels, (u, v) =>
+        {
+            float g = 0.5f + (Grain(u, v, 128, 16) - 0.5f) * 0.14f;
+            return new Color(g, g, g, 1f);
+        });
+
+        static float AsphaltDetailHeight(float u, float v) => Mathf.Pow(Grain(u, v, 128, 16), 2f) * 0.7f + Fbm(u, v, 32, 2, 17) * 0.3f;
 
         static void GrassMacro(int size, Color[] pixels) => ForEach(size, pixels, (u, v) =>
         {
@@ -237,16 +311,82 @@ namespace RealisticCarRacing.EditorTools.Circuit
             return new Color(g, g, g * 0.98f, 1f);
         });
 
-        /// <summary>U across the barrier profile, V along 8 m: the track-facing side is painted in 4 m red/white blocks.</summary>
+        // Barrier: U across the profile (0 = track-side foot ... 1 = far foot), V along 8 m (two 4 m precast sections).
+        // The track-facing side (U below the painted fraction) is painted in 4 m red/white blocks.
+
+        static bool IsBarrierJoint(float v) => Mathf.Abs(v - 0.5f) < 0.004f || v < 0.004f || v > 0.996f;
+
+        /// <summary>Black rubber scuffs left by cars on the lower painted face.</summary>
+        static float Scuff(float u, float v, float paintedFraction)
+        {
+            if (u > paintedFraction * 0.6f || u < paintedFraction * 0.1f)
+                return 0f;
+            float streak = Fbm(u * 0.3f, v, 16, 3, 63);
+            return Mathf.SmoothStep(0.62f, 0.75f, streak) * Fbm(0.5f, v, 4, 2, 64);
+        }
+
+        static float BarrierHeight(float u, float v, float paintedFraction)
+        {
+            float h = Fbm(u, v, 16, 3, 61) * 0.3f + Mathf.Pow(Grain(u, v, 256, 65), 4f) * -0.3f; // pores
+            if (u < paintedFraction && Fbm(u, v, 64, 2, 62) > 0.75f)
+                h -= 0.2f; // paint chips
+            if (IsBarrierJoint(v))
+                h -= 0.8f;
+            return h;
+        }
+
         static void Barrier(int size, Color[] pixels, float paintedFraction) => ForEach(size, pixels, (u, v) =>
         {
-            float g = 0.6f + Fbm(u, v, 8, 3, 61) * 0.1f;
+            float g = 0.6f + Fbm(u, v, 8, 3, 61) * 0.1f - Mathf.Pow(Grain(u, v, 256, 65), 4f) * 0.1f;
             var concrete = new Color(g, g, g * 0.98f, 1f);
-            if (u > paintedFraction)
-                return concrete;
-            var paint = v < 0.5f ? new Color(0.72f, 0.07f, 0.06f) : new Color(0.9f, 0.9f, 0.88f);
-            float chips = Fbm(u, v, 64, 2, 62);
-            return Color.Lerp(paint, concrete, chips > 0.75f ? 0.7f : 0f);
+            var color = concrete;
+            if (u < paintedFraction)
+            {
+                var paint = v < 0.5f ? new Color(0.68f, 0.06f, 0.05f) : new Color(0.88f, 0.88f, 0.86f);
+                color = Color.Lerp(paint, concrete, Fbm(u, v, 64, 2, 62) > 0.75f ? 0.75f : 0f);
+                color = Color.Lerp(color, new Color(0.05f, 0.05f, 0.05f), Scuff(u, v, paintedFraction) * 0.8f);
+            }
+            // Road grime splashed up the foot of the wall on both sides.
+            float foot = Mathf.Min(u, 1f - u);
+            color = Color.Lerp(color, new Color(0.3f, 0.28f, 0.24f), Mathf.SmoothStep(0.12f, 0f, foot) * (0.4f + Fbm(u, v, 16, 2, 66) * 0.4f));
+            if (IsBarrierJoint(v))
+                color *= 0.35f;
+            return color;
+        });
+
+        static void BarrierMask(int size, Color[] pixels, float paintedFraction) => ForEach(size, pixels, (u, v) =>
+        {
+            float smoothness = u < paintedFraction ? 0.42f - Scuff(u, v, paintedFraction) * 0.15f : 0.14f;
+            return new Color(0f, 0f, 0f, smoothness);
+        });
+
+        /// <summary>
+        /// Debris fence: U up the fence (2.4 m), V along it (4 m): a post at each end, top and bottom rails, and
+        /// 10 cm chain-link diamonds. Alpha is the cut-out mask (1 = wire).
+        /// </summary>
+        static void CatchFence(int size, Color[] pixels) => ForEach(size, pixels, (u, v) =>
+        {
+            bool post = v < 0.015f || v > 0.985f;
+            bool rail = u < 0.025f || u > 0.975f || Mathf.Abs(u - 0.5f) < 0.01f;
+            if (post || rail)
+            {
+                float g = post ? 0.32f : 0.45f;
+                return new Color(g, g, g * 1.03f, 1f);
+            }
+            float x = v * 40f, y = u * 24f; // 4 m / 0.1 m and 2.4 m / 0.1 m
+            float a = Mathf.Abs((x + y) % 1f - 0.5f), b = Mathf.Abs((x - y + 100f) % 1f - 0.5f);
+            bool wire = a > 0.42f || b > 0.42f;
+            float shade = 0.5f + Grain(u, v, 64, 67) * 0.1f;
+            return wire ? new Color(shade, shade, shade * 1.03f, 1f) : new Color(shade, shade, shade, 0f);
+        });
+
+        /// <summary>Tiling cloud density (R) for the sky shader: billowy fractal noise.</summary>
+        static void Clouds(int size, Color[] pixels) => ForEach(size, pixels, (u, v) =>
+        {
+            float n = Fbm(u, v, 4, 6, 171, 0.55f);
+            float billow = 1f - Mathf.Abs(Fbm(u, v, 8, 4, 172) * 2f - 1f);
+            float d = Mathf.Clamp01(n * 0.75f + billow * 0.25f);
+            return new Color(d, d, d, 1f);
         });
 
         /// <summary>V along 2 m: 1 m red, 1 m white, with a dirty inner edge.</summary>
@@ -346,12 +486,20 @@ namespace RealisticCarRacing.EditorTools.Circuit
             return new Color(g * 1.1f, g * 0.9f, g * 0.7f, 1f);
         });
 
-        static void Leaves(int size, Color[] pixels, Color baseColor) => ForEach(size, pixels, (u, v) =>
+        /// <summary>Leaf clusters: bright tops of clumps, dark gaps between them (also drives the normal map).</summary>
+        static float LeafHeight(float u, float v, int seed)
         {
-            float clusters = Fbm(u, v, 8, 4, 131);
-            float speckle = Grain(u, v, 128, 132);
-            float light = 0.7f + clusters * 0.5f + (speckle - 0.5f) * 0.25f;
-            return new Color(baseColor.r * light, baseColor.g * light, baseColor.b * light, 1f);
+            float clumps = Fbm(u, v, 8, 3, seed);
+            float leaves = Grain(u, v, 64, seed + 1) * 0.5f + Grain(u, v, 128, seed + 2) * 0.5f;
+            return clumps * 0.6f + leaves * 0.4f;
+        }
+
+        static void Leaves(int size, Color[] pixels, Color baseColor, int seed) => ForEach(size, pixels, (u, v) =>
+        {
+            float h = LeafHeight(u, v, seed);
+            float light = 0.45f + h * 0.95f;
+            float hue = (Fbm(u, v, 4, 2, seed + 3) - 0.5f) * 0.25f; // some clumps yellower, some bluer
+            return new Color(baseColor.r * light * (1f + hue), baseColor.g * light, baseColor.b * light * (1f - hue), 1f);
         });
     }
 }

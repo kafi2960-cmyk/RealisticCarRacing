@@ -28,12 +28,15 @@ namespace RealisticCarRacing.EditorTools
         public static GameCatalog Build()
         {
             var materials = VehicleTestSceneBuilder.LoadOrCreateCarMaterials();
+            // Race and showroom cars use the clear-coat paint and the detail kit; the test track keeps the plain primitives.
+            materials.kit = CarKitBuilder.LoadOrCreate();
+            materials.body = AssetDatabase.LoadAssetAtPath<Material>(CarKitBuilder.PaintPath);
             var cars = new[]
             {
                 Car("velocity_gt", "Velocity GT",
                     "Rear-wheel-drive grand tourer. Balanced and predictable: the reference car.",
                     Settings("VelocityGT", _ => { }),
-                    Palette(0.75f, 0.1f, 0.08f), materials),
+                    Palette(0.75f, 0.1f, 0.08f), "Velocity Red", materials),
                 Car("apex_rs", "Apex RS",
                     "All-wheel-drive turbo. The most power and traction, but also the heaviest.",
                     Settings("ApexRS", s =>
@@ -47,7 +50,7 @@ namespace RealisticCarRacing.EditorTools
                         s.downforceCoefficient = 1.5f;
                         s.maxBrakeTorque = 10500f;
                     }),
-                    Palette(0.1f, 0.25f, 0.7f), materials),
+                    Palette(0.1f, 0.25f, 0.7f), "Apex Blue", materials),
                 Car("strada_sport", "Strada Sport",
                     "Light front-wheel-drive hot hatch. Less power, but nimble in the slow corners.",
                     Settings("StradaSport", s =>
@@ -60,7 +63,7 @@ namespace RealisticCarRacing.EditorTools
                         s.frontBrakeBias = 0.7f;
                         s.dragCoefficient = 0.34f;
                     }),
-                    Palette(0.95f, 0.75f, 0.1f), materials)
+                    Palette(0.95f, 0.75f, 0.1f), "Strada Yellow", materials)
             };
 
             var races = new[]
@@ -104,7 +107,7 @@ namespace RealisticCarRacing.EditorTools
         }
 
         static CarDefinition Car(string id, string displayName, string description, VehicleSettings settings, Color[] paints,
-            TestVehicleFactory.Materials materials)
+            string signaturePaint, TestVehicleFactory.Materials materials)
         {
             var car = LoadOrCreate<CarDefinition>($"{CarsFolder}/{displayName.Replace(" ", "")}.asset", out bool created);
             if (created)
@@ -114,11 +117,14 @@ namespace RealisticCarRacing.EditorTools
                 car.description = description;
                 car.paints = paints;
             }
+            if (car.paints.Length == paints.Length)
+                car.paintNames = PaletteNames(signaturePaint);
             car.settings = settings;
             car.bodyMaterial = materials.body;
             car.cabinMaterial = materials.cabin;
             car.tyreMaterial = materials.tyre;
             car.markerMaterial = materials.marker;
+            car.visualKit = materials.kit;
             EditorUtility.SetDirty(car);
             return car;
         }
@@ -149,6 +155,11 @@ namespace RealisticCarRacing.EditorTools
             new Color(0.1f, 0.45f, 0.25f), new Color(0.95f, 0.45f, 0.05f), new Color(0.45f, 0.1f, 0.55f), new Color(0.1f, 0.6f, 0.75f)
         };
 
+        static string[] PaletteNames(string signature) => new[]
+        {
+            signature, "Pearl White", "Obsidian Black", "Titanium Silver", "Racing Green", "Sunset Orange", "Royal Purple", "Lagoon Blue"
+        };
+
         static void ScaleTorque(VehicleSettings settings, float factor)
         {
             var keys = settings.torqueCurve.keys;
@@ -162,6 +173,7 @@ namespace RealisticCarRacing.EditorTools
         public static void BuildAll()
         {
             ProjectSetup.Apply();
+            AudioContentBuilder.Build();
             VehicleTestSceneBuilder.Build();
             Build();
             CircuitSceneBuilder.Build();

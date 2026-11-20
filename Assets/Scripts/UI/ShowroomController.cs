@@ -5,41 +5,48 @@ using UnityEngine;
 namespace RealisticCarRacing.UI
 {
     /// <summary>
-    /// Displays the selected car, in its garage paint, on a slowly rotating turntable. Each car model is built once
-    /// and kept (pooled) for the rest of the menu session; paint changes recolour it in place instead of rebuilding.
+    /// Puts the selected car, in its garage paint and wheels, on the showroom turntable. Each car model is built once
+    /// and kept (pooled) for the rest of the menu session; paint and wheel changes are applied in place instead of
+    /// rebuilding. Turning the turntable and the camera is <see cref="ShowroomOrbit"/>'s job.
     /// </summary>
     public sealed class ShowroomController : MonoBehaviour
     {
         static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
 
         [SerializeField] Transform turntable;
-        [Tooltip("Degrees per second.")]
-        [SerializeField] float rotationSpeed = 14f;
 
         readonly Dictionary<CarDefinition, GameObject> models = new Dictionary<CarDefinition, GameObject>();
         MaterialPropertyBlock paintBlock;
 
         public GameObject CurrentCar { get; private set; }
+        public CarDefinition CurrentDefinition { get; private set; }
         public int ModelsBuilt => models.Count;
 
         public void Configure(Transform turntableTransform) => turntable = turntableTransform;
 
-        public void Show(CarDefinition car, int paint, TuningPreset tuning)
+        public void Show(CarDefinition car, int paint, int wheels, TuningPreset tuning)
         {
             if (!models.TryGetValue(car, out var model))
             {
-                model = CarBuilder.BuildDisplayModel(car, 0, tuning, turntable);
+                model = CarBuilder.BuildDisplayModel(car, 0, wheels, tuning, turntable);
                 models[car] = model;
             }
             foreach (var other in models.Values)
                 other.SetActive(other == model);
             CurrentCar = model;
+            CurrentDefinition = car;
 
             paintBlock ??= new MaterialPropertyBlock();
             var body = model.transform.Find("Chassis").GetComponent<MeshRenderer>();
             body.GetPropertyBlock(paintBlock);
             paintBlock.SetColor(BaseColor, car.Paint(paint));
-            body.SetPropertyBlock(paintBlock);
+            // Every painted panel (body, roof...) shares the chassis paint material.
+            foreach (var panel in model.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (panel.sharedMaterial == body.sharedMaterial)
+                    panel.SetPropertyBlock(paintBlock);
+            }
+            CarBuilder.FitWheels(model, car.visualKit, wheels);
         }
 
         /// <summary>The paint currently shown on the displayed car.</summary>
@@ -54,10 +61,19 @@ namespace RealisticCarRacing.UI
             }
         }
 
-        void Update()
+        /// <summary>The rim mesh currently fitted to the displayed car.</summary>
+        public Mesh ShownRim
         {
-            if (turntable != null)
-                turntable.Rotate(0f, rotationSpeed * Time.unscaledDeltaTime, 0f, Space.World);
+            get
+            {
+                var wheels = CurrentCar.transform.Find(TestVehicleFactory.WheelVisualsName);
+                foreach (var filter in wheels.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    if (filter.name == TestVehicleFactory.RimName)
+                        return filter.sharedMesh;
+                }
+                return null;
+            }
         }
     }
 }

@@ -18,6 +18,7 @@ namespace RealisticCarRacing.Controls
         public InputAction ShiftDown { get; }
         public InputAction ToggleTransmission { get; }
         public InputAction ResetVehicle { get; }
+        public InputAction Horn { get; }
 
         public VehicleInputActions()
         {
@@ -61,6 +62,10 @@ namespace RealisticCarRacing.Controls
             ResetVehicle = Map.AddAction("ResetVehicle", InputActionType.Button);
             ResetVehicle.AddBinding("<Keyboard>/r");
             ResetVehicle.AddBinding("<Gamepad>/select");
+
+            Horn = Map.AddAction("Horn", InputActionType.Button);
+            Horn.AddBinding("<Keyboard>/h");
+            Horn.AddBinding("<Gamepad>/leftStickPress");
         }
 
         public void Enable() => Map.Enable();

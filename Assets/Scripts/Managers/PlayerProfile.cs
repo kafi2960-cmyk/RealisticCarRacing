@@ -35,6 +35,8 @@ namespace RealisticCarRacing.Managers
     {
         public string carId;
         public int paint;
+        /// <summary>Index into the car's wheel designs (0 = factory wheels; visual only).</summary>
+        public int wheels;
         public TuningPreset tuning;
     }
 
@@ -79,6 +81,43 @@ namespace RealisticCarRacing.Managers
         public bool showPerformance;
     }
 
+    /// <summary>Audio menu choices: 0..1 linear volumes (master and one per mixer group) and mute.</summary>
+    [Serializable]
+    public sealed class AudioPreferences
+    {
+        public float master = 1f;
+        public float engine = 1f;
+        public float transmission = 1f;
+        public float tires = 1f;
+        public float environment = 1f;
+        public float ui = 0.8f;
+        public float music = 0.6f;
+        public bool muted;
+
+        public float Get(Audio.AudioCategory category) => category switch
+        {
+            Audio.AudioCategory.Engine => engine,
+            Audio.AudioCategory.Transmission => transmission,
+            Audio.AudioCategory.Tires => tires,
+            Audio.AudioCategory.Environment => environment,
+            Audio.AudioCategory.UI => ui,
+            _ => music
+        };
+
+        public void Set(Audio.AudioCategory category, float value)
+        {
+            switch (category)
+            {
+                case Audio.AudioCategory.Engine: engine = value; break;
+                case Audio.AudioCategory.Transmission: transmission = value; break;
+                case Audio.AudioCategory.Tires: tires = value; break;
+                case Audio.AudioCategory.Environment: environment = value; break;
+                case Audio.AudioCategory.UI: ui = value; break;
+                default: music = value; break;
+            }
+        }
+    }
+
     /// <summary>The player's saved selections, garage setups, graphics choices and personal records.</summary>
     [Serializable]
     public sealed class PlayerProfile
@@ -86,6 +125,7 @@ namespace RealisticCarRacing.Managers
         public string selectedCarId = string.Empty;
         public string selectedRaceId = string.Empty;
         public GraphicsPreferences graphics = new GraphicsPreferences();
+        public AudioPreferences audio = new AudioPreferences();
         public List<CarSetup> carSetups = new List<CarSetup>();
         public List<RaceRecord> records = new List<RaceRecord>();
 

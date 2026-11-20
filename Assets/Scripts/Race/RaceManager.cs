@@ -103,7 +103,7 @@ namespace RealisticCarRacing.Racing
                 Racer racer;
                 if (isPlayer)
                 {
-                    var vehicle = CarBuilder.Build(playerCar, playerSetup.paint, playerSetup.tuning, pose.position, pose.rotation, true, "Player");
+                    var vehicle = CarBuilder.Build(playerCar, playerSetup.paint, playerSetup.wheels, playerSetup.tuning, pose.position, pose.rotation, true, "Player");
                     racer = new Racer("YOU", true, playerCar, vehicle, new RaceProgress(track, checkpointsPerLap, pose.position));
                     Player = racer;
                     playerControls = vehicle.InputSource;
@@ -115,7 +115,8 @@ namespace RealisticCarRacing.Racing
                     if (car == playerCar && paint == playerSetup.paint)
                         paint = (paint + 1) % car.paints.Length; // never mistake an opponent for yourself
                     string name = catalog.opponentNames.Length > 0 ? catalog.opponentNames[slot % catalog.opponentNames.Length] : $"Driver {slot + 1}";
-                    var vehicle = CarBuilder.Build(car, paint, TuningPreset.Balanced, pose.position, pose.rotation, false, $"AI {name}");
+                    int wheels = slot % car.WheelDesignCount; // variety without consuming the seeded random sequence
+                    var vehicle = CarBuilder.Build(car, paint, wheels, TuningPreset.Balanced, pose.position, pose.rotation, false, $"AI {name}");
                     racer = new Racer(name, false, car, vehicle, new RaceProgress(track, checkpointsPerLap, pose.position));
                     var ai = new RaceAIDriver(vehicle, track, racingLine, racers, AIProfile.For(Race.difficulty, (float)random.NextDouble() * 2f - 1f)) { Self = racer };
                     vehicle.SetInputSource(ai);
@@ -128,12 +129,14 @@ namespace RealisticCarRacing.Racing
                 entrant.Progress.CheckpointReached += checkpoint => entrant.RecordCheckpoint(checkpoint, RaceTime);
                 entrant.Progress.LapCompleted += laps => OnLapCompleted(entrant, laps);
                 racers.Add(entrant);
+                Audio.VehicleAudioManager.Attach(entrant.Vehicle, entrant.IsPlayer);
             }
 
             standings.AddRange(racers);
             RaceStandings.Sort(standings);
             if (cameraRig != null)
                 cameraRig.SetTarget(Player.Vehicle.transform);
+            gameObject.AddComponent<Audio.RaceAudioCues>().Initialise(this);
         }
 
         void Update()

@@ -118,6 +118,7 @@ namespace RealisticCarRacing.UI
             image.raycastTarget = true;
             var button = image.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
+            image.gameObject.AddComponent<Audio.UiButtonSound>().isBack = label == "BACK";
             button.colors = new ColorBlock
             {
                 normalColor = UiTheme.PanelLight,

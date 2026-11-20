@@ -13,6 +13,8 @@ namespace RealisticCarRacing.Vehicles
         [SerializeField] Transform cockpit;
         [Tooltip("Cabin interior; only rendered while a camera is in the cockpit.")]
         [SerializeField] Transform interior;
+        [Tooltip("Hidden while the camera is in the cockpit (e.g. the outer glass, which would sit right in front of the lens).")]
+        [SerializeField] Renderer[] exteriorOnly = System.Array.Empty<Renderer>();
 
         Renderer[] interiorRenderers;
 
@@ -20,11 +22,12 @@ namespace RealisticCarRacing.Vehicles
         public Transform Cockpit => cockpit;
         public bool InteriorVisible { get; private set; } = true;
 
-        public void Configure(Transform hoodMount, Transform cockpitMount, Transform interiorRoot = null)
+        public void Configure(Transform hoodMount, Transform cockpitMount, Transform interiorRoot = null, Renderer[] exteriorOnlyRenderers = null)
         {
             hood = hoodMount;
             cockpit = cockpitMount;
             interior = interiorRoot;
+            exteriorOnly = exteriorOnlyRenderers ?? System.Array.Empty<Renderer>();
             interiorRenderers = null;
             SetInteriorVisible(false);
         }
@@ -32,6 +35,11 @@ namespace RealisticCarRacing.Vehicles
         /// <summary>Shows or hides the cabin interior. Scripts on it (e.g. the steering wheel) keep running.</summary>
         public void SetInteriorVisible(bool visible)
         {
+            foreach (var renderer in exteriorOnly)
+            {
+                if (renderer != null)
+                    renderer.enabled = !visible;
+            }
             if (interior == null)
                 return;
             interiorRenderers ??= interior.GetComponentsInChildren<Renderer>(true);

@@ -19,6 +19,8 @@ namespace RealisticCarRacing.Controls
         public float Steer;
 
         public bool Handbrake;
+        /// <summary>Held: sounds the horn. No effect on the physics.</summary>
+        public bool Horn;
 
         // One-shot requests: true only in the read that follows the button press.
         public bool ShiftUp;

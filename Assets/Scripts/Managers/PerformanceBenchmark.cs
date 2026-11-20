@@ -9,8 +9,9 @@ using UnityEngine.SceneManagement;
 namespace RealisticCarRacing.Managers
 {
     /// <summary>
-    /// Command-line benchmark for player builds: for each quality level, loads the circuit with a 6-car race,
-    /// lets the autopilot drive the player car and records <see cref="PerformanceReport"/>s to a JSON file, then quits.
+    /// Command-line benchmark for player builds: for each quality level, measures the garage (car turning on the
+    /// turntable), then loads the circuit with a 6-car race, lets the autopilot drive the player car and records
+    /// <see cref="PerformanceReport"/>s to a JSON file, then quits.
     /// <para>Usage: <c>RealisticCarRacing -benchmark -benchmarkPresets Low,Medium,High -benchmarkSeconds 30 -benchmarkOutput results.json</c></para>
     /// Inert unless <c>-benchmark</c> is on the command line.
     /// </summary>
@@ -73,8 +74,7 @@ namespace RealisticCarRacing.Managers
                 QualitySettings.vSyncCount = 0;
                 Application.targetFrameRate = -1;
 
-                yield return LoadMeasured(SceneFlow.MainMenuScene, results, $"{preset} · main menu load");
-                yield return new WaitForSecondsRealtime(3f);
+                yield return MeasureGarage(preset, Mathf.Min(seconds, 15f), results);
 
                 GameSession.PendingRace = race;
                 float loadSeconds = 0f;
@@ -119,11 +119,29 @@ namespace RealisticCarRacing.Managers
             loaded(Time.realtimeSinceStartup - start);
         }
 
-        static IEnumerator LoadMeasured(string scene, Results results, string label)
+        /// <summary>Main menu load time, then the garage with the car turning on the turntable.</summary>
+        static IEnumerator MeasureGarage(string preset, float seconds, Results results)
         {
-            float seconds = 0f;
-            yield return LoadScene(scene, s => seconds = s);
-            results.reports.Add(new PerformanceReport { label = label, qualityLevel = QualitySettings.names[QualitySettings.GetQualityLevel()], sceneLoadSeconds = seconds });
+            float loadSeconds = 0f;
+            yield return LoadScene(SceneFlow.MainMenuScene, s => loadSeconds = s);
+            FindAnyObjectByType<UI.MainMenuController>().Show(UI.MainMenuController.Screen.Garage);
+            FindAnyObjectByType<UI.ShowroomOrbit>().AutoSpin = true; // every side of the car, as a player turning it would see
+            yield return new WaitForSecondsRealtime(4f);
+
+            using (var sampler = new PerformanceSampler())
+            {
+                float end = Time.realtimeSinceStartup + seconds;
+                while (Time.realtimeSinceStartup < end)
+                {
+                    yield return null;
+                    sampler.SampleFrame();
+                }
+                var report = sampler.Report($"{preset} · garage");
+                report.sceneLoadSeconds = loadSeconds;
+                results.reports.Add(report);
+                Debug.Log($"Benchmark {report.label}: {report.averageFps:0.0} fps avg, {report.medianFrameMs:0.00} ms median, " +
+                          $"{report.onePercentLowFps:0.0} fps 1% low, batches {report.averageBatches:0}, load {loadSeconds:0.00} s");
+            }
         }
     }
 }

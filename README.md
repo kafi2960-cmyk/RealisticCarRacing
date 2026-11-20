@@ -56,10 +56,9 @@ mode, or set *TouchControlsCanvas → Touch Controls Visibility → Mode* to **A
 
 | Screen / system | What it does |
 |---|---|
-| Main menu | RACE · GARAGE · SETTINGS · QUIT over a 3D showroom with the selected car on a turntable |
-| Race select | Sprint (2 laps, 3 Easy AI) · Grand Prix (3 laps, 5 Medium) · Championship Final (5 laps, 9 Hard) · Time Trial (solo); shows your best lap and finish |
-| Car select | Velocity GT (RWD) · Apex RS (AWD, most power) · Strada Sport (FWD, lightest), with power / top speed / grip / agility bars |
-| Garage | 8 paints per car and three setups (Balanced, High Grip, Top Speed); saved per car |
+| Main menu | RACE · GARAGE · SETTINGS · QUIT over the showroom, with the selected car turning on the turntable |
+| Race select | Sprint (2 laps, 3 Easy AI) · Grand Prix (3 laps, 5 Medium) · Championship Final (5 laps, 9 Hard) · Time Trial (solo); shows your best lap and finish. Choosing a race opens the garage |
+| Garage | Vehicle selection and preparation (see below), with **START RACE** |
 | Race start | Grid of up to 12 cars (you start at the back), 3-2-1-GO countdown with cars held on the brakes |
 | AI opponents | Follow a computed racing line (outside–apex–outside), overtake slower cars on the side with room, hold back when boxed in, keep a car's width alongside, and are put back on track if stuck, beached or facing the wrong way |
 | Checkpoints & laps | 16 checkpoints per lap that must be passed in order; reversing over the line never counts twice |
@@ -70,8 +69,52 @@ mode, or set *TouchControlsCanvas → Touch Controls Visibility → Mode* to **A
 
 Menus work with mouse/touch, keyboard (arrows/WASD, Enter, Esc) and gamepad (D-pad/stick, A, B, Start).
 
+### Garage
+
+| Feature | How |
+|---|---|
+| Choose a car | `<` / `>` beside the name: Velocity GT (RWD) · Apex RS (AWD, most power) · Strada Sport (FWD, lightest) |
+| Turn the car | Drag with the mouse or one finger (with a little inertia) · Q / E · gamepad right stick. Dragging up/down raises or lowers the camera |
+| Zoom | Mouse wheel · pinch · + / − keys and buttons · gamepad triggers; limited so the camera never enters the car |
+| Views | **3/4 · FRONT · SIDE · REAR** buttons (gamepad bumpers step through them); the turntable eases round |
+| Paint | 8 named metallic clear-coat paints per car |
+| Wheels | 4 designs: Split 10-Spoke (machined silver) · Forged Y-Spoke (gloss black) · Cross-Spoke Mesh (gunmetal) · Turbine 7-Spoke (satin bronze); cosmetic, same tyre |
+| Setup | Balanced · High Grip · Top Speed, with power / top speed / grip / agility bars |
+| Specifications | Power and torque (with rpm), 0–100 km/h, top speed, weight, power-to-weight, drivetrain, gearbox. Calculated from the car's physics and current setup; `CarSpecsTests` times real 0–100 runs to check the figure |
+| Start Race | Races the selected event in the selected car, paint, wheels and setup (all saved per car) |
+
+The showroom is a seamless cyclorama with a polished floor, overhead softboxes, a ring light and wall light strips.
+Those are unlit emissive surfaces whose reflections come from a baked, box-projected reflection probe, so on a phone
+the room costs a few draw calls and no extra real-time lights. One key light casts shadows; two accents don't; a
+soft contact shadow keeps the car grounded on presets with short shadows. The camera keeps the whole car framed in
+the area beside the menu panel at any screen shape, and the anti-aliasing follows the graphics preset.
+
+**The selectable cars still use the box-bodied placeholder body** (see *Car visuals*): the garage is ready for
+licensed car models, but none has been bought or imported yet.
+
 Content lives in `Assets/Settings/Cars`, `Assets/Settings/Races` and `Assets/Resources/GameCatalog.asset`; edit those
 assets to tune cars, change laps/opponents/difficulty or add events. AI pace per difficulty is in `AIProfile.For`.
+
+## Audio
+
+The sound system is built and tested, but **no recordings are in the project yet**: until clips are added under
+`Assets/Audio`, the game is silent. Nothing is synthesised to stand in for missing recordings.
+
+| Part | What it does |
+|---|---|
+| `CarEngineAudio` | Steady-RPM engine loops, equal-power cross-faded by the engine's actual RPM and pitched to it; on-throttle and coasting recordings blended by engine load; startup/shutdown; exhaust crackles on lift-off at high RPM; muffled from the cockpit |
+| `GearShiftAudio` | One sound per actual gear change (up, down, drive/reverse engagement); firmer for manual shifts |
+| `TireAudio` | Squeal, lock-up, drift and brake layers from each wheel's slip; rolling noise per surface (asphalt, kerb, grass, gravel via `TrackSurfaces`) |
+| `EnvironmentAudio` | Wind with speed, horn (H / left-stick click / HORN touch button), impacts scaled by impact speed, barrier scrape |
+| `UIAudioManager` | Menu hover/click/back, countdown beeps and GO, lap and finish cues, menu music |
+| `VehicleAudioManager` | Creates each car's sources once at spawn, routes them to the mixer, pauses silent loops (frees voices) and AI cars beyond 140 m |
+| Mixer | `Assets/Audio/Mixer/GameMixer.mixer`: Master → Engine, Transmission, Tires, Environment, UI, Music, each with an exposed volume |
+| Settings | **AUDIO** in the main menu and pause menu: master and per-group volume in 10 % steps, mute; saved in the profile |
+
+Adding recordings: put them under `Assets/Audio/Engine`, `Loops`, `SFX`, `UI` or `Music` (import settings are set
+per folder by `AudioImportRules`) and name them as `AudioContentBuilder` expects (`engine_on_3000`,
+`engine_off_1500`, `tyre_squeal`, `impact_light_01`, `ui_click`, ...), then run **RealisticCarRacing → Create
+Audio Content**. Record each file's source and licence in `ASSET_LICENSES.md`.
 
 ## Grand Prix circuit
 
@@ -81,11 +124,25 @@ assets to tune cars, change laps/opponents/difficulty or add events. AI pace per
 - 2.2 km anticlockwise lap, 17 corners (tightest radius 30 m), 12 m asphalt with painted edge lines,
   red/white kerbs on every corner, gravel traps on the outside of the slowest ones, chequered start line and grid.
 - Painted concrete barriers on both sides along the whole lap (low-friction physics material so cars slide off them).
-- Pit building, race-control tower, start gantry, five main grandstands plus corner grandstands, a city skyline,
-  ~6,600 GPU-instanced trees and a ring of hills.
-- Procedural tileable textures with normal maps (`Assets/Textures/Circuit`), URP Lit materials, procedural sky,
-  real-time sun with soft shadows, baked sky ambient + reflection probe, fog, and post-processing
-  (ACES tonemapping, bloom, colour grading, vignette; SSAO on the PC renderer).
+- Chain-link debris fences on the barriers, pit building, race-control tower, start gantry, five main grandstands
+  plus corner grandstands, a city skyline, ~6,600 GPU-instanced trees (three species, each with a detailed and a
+  distant mesh) and a ring of hills.
+- Procedural tileable textures with normal and smoothness maps (`Assets/Textures/Circuit`): asphalt with aggregate,
+  repair patches, cracks and a polished racing line plus close-up detail maps; barriers with precast joints, chips,
+  tyre scuffs and road grime.
+- Cloud sky (`Assets/Shaders/Sky.shader`) that also provides the ambient light; real-time sun with soft shadows;
+  baked reflection probes round the lap (box-projected); fog matched to the horizon; post-processing (ACES
+  tonemapping, grading, bloom, vignette, camera motion blur on High; SSAO on High).
+
+### Car visuals
+
+Until the licensed car model is bought, the race cars are still the **box-bodied placeholder** — the body shape is
+not realistic. Everything around it is the production system an imported model will use (`CarVisualKit`,
+generated by **Create Game Content**): clear-coat metallic paint (URP Complex Lit), tinted glass that is hidden from
+the cockpit, lathed tyres with tread and sidewall, ten-spoke rims, drilled brake discs and calipers that steer
+but don't spin, head/tail lamps, **brake lights from the brake pedal**, reverse lights, headlight beams on the
+player's car (Medium/High), seats, binnacle gauges with live rev and speed needles, and per-car LODs. Physics are
+unchanged (`CarVisualsTests` checks identical driving with and without the kit).
 
 To change the track, edit the control points in the layout asset and run **RealisticCarRacing → Create Circuit Scene**.
 Keep corners wider than the barrier offset (15 m); `TrackLayoutTests` checks this.
@@ -103,7 +160,8 @@ Assets/
   Scenes/                 MainMenu (startup), Circuit_GrandPrix, VehicleTestTrack
   Scripts/
     Cars/                 VehicleController, VehicleSettings, CarDefinition, CarBuilder, CarStats, VehicleTuning,
-                          TestVehicleFactory, VehicleCameraMounts, SteeringWheelVisual
+                          TestVehicleFactory, VehicleCameraMounts, SteeringWheelVisual, CarVisualKit, CarLights,
+                          BrakeCaliperVisual, DashboardGauges
     Physics/              VehicleEngine, VehicleTransmission, VehicleWheel
     Input/                VehicleInputState + IVehicleInputSource (contract), VehicleInputActions, PlayerVehicleInput,
                           CameraInputActions, PlayerCameraInput
@@ -113,14 +171,15 @@ Assets/
     Managers/             GameSession, GameCatalog, PlayerProfile (+ storage), SceneFlow, EnvironmentQualityScaler,
                           GraphicsSettingsService, DeviceTierDetector, PerformanceOverlay, PerformanceBenchmark
     Camera/               VehicleCameraRig (chase / hood / cockpit)
-    UI/                   UiFactory/UiTheme, MainMenuController, ShowroomController, RaceHud, RaceMenus,
+    UI/                   UiFactory/UiTheme, MainMenuController, ShowroomController, ShowroomOrbit, RaceHud, RaceMenus,
                           GraphicsSettingsPanel, LoadingScreen,
                           TouchControlsFactory, TouchControlsVisibility, VehicleDebugHud
     Multiplayer/          (upcoming phase)
-    Editor/               ProjectSetup, BuildMenu, VehicleTestSceneBuilder, SceneBuildUtility,
+    Editor/               ProjectSetup, BuildMenu, VehicleTestSceneBuilder, SceneBuildUtility, CarKitBuilder,
                           Circuit/ (CircuitSceneBuilder, TrackMeshBuilder, SceneryMeshBuilder, ProceduralTextures)
   Settings/               URP assets; Vehicles/TestCarSettings (car tuning); Tracks/GrandPrixCircuit (layout)
   Prefabs/                TestVehicle.prefab
+  Shaders/                Sky (cloud sky + sun)
   Materials/ Textures/ Models/Generated/ Audio/ UI/
   Tests/EditMode, Tests/PlayMode
 ```
@@ -160,8 +219,15 @@ $UNITY -batchmode -projectPath . -runTests -testPlatform EditMode -testResults L
 $UNITY -batchmode -projectPath . -runTests -testPlatform PlayMode -testResults Logs/playmode.xml
 ```
 
+Before/after screenshots of fixed Game-camera views (circuit views with the cars held on the grid, and the garage
+with its UI), on demand:
+
+```sh
+CAPTURE_DIR=$PWD/Logs/shots CAPTURE_TAG=after $UNITY -batchmode -projectPath . -runTests -testPlatform PlayMode -testFilter VisualCaptureTests
+```
+
 ## Assets and licensing
 
-No third-party assets are included yet: the test car is built from Unity primitives and the whole circuit
-(meshes and textures) is generated by the editor scripts. Record the source and licence of
+No third-party assets are included yet: the placeholder car body is built from Unity primitives, and the car
+detail kit, the sky, the showroom and the whole circuit (meshes, textures, shader) are generated by the project's own scripts. Record the source and licence of
 every imported model, texture, sound or AI-generated asset in `ASSET_LICENSES.md` before committing it.

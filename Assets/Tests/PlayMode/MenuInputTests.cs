@@ -104,7 +104,7 @@ namespace RealisticCarRacing.Tests
             yield return Hold(keyboard.enterKey);
             Assert.That(menu.Current, Is.EqualTo(MainMenuController.Screen.RaceSelect));
             yield return Hold(keyboard.enterKey);
-            Assert.That(menu.Current, Is.EqualTo(MainMenuController.Screen.CarSelect));
+            Assert.That(menu.Current, Is.EqualTo(MainMenuController.Screen.Garage));
             Assert.That(Selected, Is.EqualTo("Button START RACE"));
             yield return Hold(keyboard.enterKey);
             yield return WaitForRace();
@@ -169,7 +169,7 @@ namespace RealisticCarRacing.Tests
             yield return Tap("Button RACE");
             Assert.That(menu.Current, Is.EqualTo(MainMenuController.Screen.RaceSelect));
             yield return Tap("Race sprint");
-            Assert.That(menu.Current, Is.EqualTo(MainMenuController.Screen.CarSelect));
+            Assert.That(menu.Current, Is.EqualTo(MainMenuController.Screen.Garage));
             yield return Tap("NextCar");
             Assert.That(GameSession.SelectedCar, Is.EqualTo(GameSession.Catalog.cars[1]));
             yield return Tap("Button START RACE");

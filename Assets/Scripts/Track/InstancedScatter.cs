@@ -7,7 +7,8 @@ namespace RealisticCarRacing.Tracks
     /// <summary>
     /// Draws many copies of one mesh (trees, rocks...) with GPU instancing instead of thousands of GameObjects.
     /// Instances are grouped into spatial chunks that are frustum- and distance-culled; lowering
-    /// <see cref="Density"/> draws a random subset (instances are shuffled when baked).
+    /// <see cref="Density"/> draws a random subset (instances are shuffled when baked). Chunks beyond
+    /// <see cref="LodDistance"/> use the simpler <c>lodMesh</c> (same sub-mesh layout).
     /// Decoration only: instances have no colliders, so keep them outside the drivable area.
     /// </summary>
     [ExecuteAlways]
@@ -21,6 +22,9 @@ namespace RealisticCarRacing.Tracks
         }
 
         [SerializeField] Mesh mesh;
+        [Tooltip("Simpler version of the mesh for distant chunks (optional).")]
+        [SerializeField] Mesh lodMesh;
+        [SerializeField] float lodDistance = 150f;
         [Tooltip("One material per sub-mesh. Materials must have GPU instancing enabled.")]
         [SerializeField] Material[] materials;
         [SerializeField] Chunk[] chunks = Array.Empty<Chunk>();
@@ -34,6 +38,8 @@ namespace RealisticCarRacing.Tracks
         public float DrawDistance { get => drawDistance; set => drawDistance = value; }
         public float Density { get => density; set => density = Mathf.Clamp01(value); }
         public float ShadowDistance { get => shadowDistance; set => shadowDistance = Mathf.Max(0f, value); }
+        public float LodDistance { get => lodDistance; set => lodDistance = Mathf.Max(0f, value); }
+        public Mesh LodMesh => lodMesh;
         public int InstanceCount
         {
             get
@@ -45,9 +51,10 @@ namespace RealisticCarRacing.Tracks
             }
         }
 
-        public void Configure(Mesh instanceMesh, Material[] subMeshMaterials, Chunk[] instanceChunks)
+        public void Configure(Mesh instanceMesh, Material[] subMeshMaterials, Chunk[] instanceChunks, Mesh distantMesh = null)
         {
             mesh = instanceMesh;
+            lodMesh = distantMesh;
             materials = subMeshMaterials;
             chunks = instanceChunks;
         }
@@ -64,6 +71,7 @@ namespace RealisticCarRacing.Tracks
             float maxDistanceSqr = drawDistance * drawDistance;
 
             float shadowDistanceSqr = shadowDistance * shadowDistance;
+            float lodDistanceSqr = lodMesh != null ? lodDistance * lodDistance : float.MaxValue;
             for (int subMesh = 0; subMesh < mesh.subMeshCount && subMesh < materials.Length; subMesh++)
             {
                 // Two variants: only chunks near the camera are submitted to the shadow passes, because every
@@ -85,7 +93,8 @@ namespace RealisticCarRacing.Tracks
 
                     int count = Mathf.CeilToInt(chunk.matrices.Length * density);
                     if (count > 0)
-                        Graphics.RenderMeshInstanced(distanceSqr < shadowDistanceSqr ? withShadows : withoutShadows, mesh, subMesh, chunk.matrices, count);
+                        Graphics.RenderMeshInstanced(distanceSqr < shadowDistanceSqr ? withShadows : withoutShadows,
+                            distanceSqr > lodDistanceSqr ? lodMesh : mesh, subMesh, chunk.matrices, count);
                 }
             }
         }

@@ -21,6 +21,7 @@ namespace RealisticCarRacing.EditorTools
             public int msaa;
             public float shadowDistance;
             public int cascades;
+            public Vector3 cascadeSplits;    // fractions of the shadow distance (2 cascades use x only)
             public int shadowResolution;
             public bool softShadows;
             public int softShadowQuality;   // 1 low, 2 medium, 3 high
@@ -37,13 +38,14 @@ namespace RealisticCarRacing.EditorTools
 
         static readonly Preset[] Presets =
         {
-            new Preset { renderScale = 0.75f, msaa = 1, shadowDistance = 45f, cascades = 1, shadowResolution = 1024, softShadows = false, softShadowQuality = 1,
+            new Preset { renderScale = 0.75f, msaa = 1, shadowDistance = 45f, cascades = 1, cascadeSplits = Vector3.zero, shadowResolution = 1024, softShadows = false, softShadowQuality = 1,
                 additionalLightsMode = 2, additionalLightsPerObject = 2, additionalLightShadows = false, probeBlending = false,
                 lodBias = 0.6f, textureMipLimit = 1, anisotropic = AnisotropicFiltering.Disable, streamingBudgetMB = 128, renderer = "Mobile_Renderer" },
-            new Preset { renderScale = 0.9f, msaa = 2, shadowDistance = 90f, cascades = 2, shadowResolution = 2048, softShadows = true, softShadowQuality = 1,
+            new Preset { renderScale = 0.9f, msaa = 2, shadowDistance = 90f, cascades = 2, cascadeSplits = new Vector3(0.22f, 0f, 0f), shadowResolution = 2048, softShadows = true, softShadowQuality = 1,
                 additionalLightsMode = 1, additionalLightsPerObject = 4, additionalLightShadows = false, probeBlending = false,
                 lodBias = 1f, textureMipLimit = 0, anisotropic = AnisotropicFiltering.Enable, streamingBudgetMB = 256, renderer = "Mobile_Renderer" },
-            new Preset { renderScale = 1f, msaa = 4, shadowDistance = 180f, cascades = 4, shadowResolution = 2048, softShadows = true, softShadowQuality = 3,
+            // Most of the resolution goes to the first 40 m, where the cars and their contact shadows are.
+            new Preset { renderScale = 1f, msaa = 4, shadowDistance = 180f, cascades = 4, cascadeSplits = new Vector3(0.05f, 0.14f, 0.38f), shadowResolution = 2048, softShadows = true, softShadowQuality = 3,
                 additionalLightsMode = 1, additionalLightsPerObject = 8, additionalLightShadows = true, probeBlending = true,
                 lodBias = 1.6f, textureMipLimit = 0, anisotropic = AnisotropicFiltering.ForceEnable, streamingBudgetMB = 512, renderer = "PC_Renderer" }
         };
@@ -131,6 +133,7 @@ namespace RealisticCarRacing.EditorTools
                     case float f: property.floatValue = f; break;
                     case int n: property.intValue = n; break; // enum values (MSAA, shadow resolution...) are written as values, not indices
                     case bool b: property.boolValue = b; break;
+                    case Vector3 v: property.vector3Value = v; break;
                 }
             }
 
@@ -139,6 +142,10 @@ namespace RealisticCarRacing.EditorTools
             Set("m_SupportsHDR", true); // keep the same tonemapped look on every preset
             Set("m_ShadowDistance", preset.shadowDistance);
             Set("m_ShadowCascadeCount", preset.cascades);
+            if (preset.cascades == 2)
+                Set("m_Cascade2Split", preset.cascadeSplits.x);
+            if (preset.cascades == 4)
+                Set("m_Cascade4Split", preset.cascadeSplits);
             Set("m_MainLightShadowmapResolution", preset.shadowResolution);
             Set("m_SoftShadowsSupported", preset.softShadows);
             Set("m_SoftShadowQuality", preset.softShadowQuality);
