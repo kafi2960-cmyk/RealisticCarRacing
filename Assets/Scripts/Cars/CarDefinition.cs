@@ -28,6 +28,10 @@ namespace RealisticCarRacing.Vehicles
         [Tooltip("Wheels, brakes, glass, lamps and cabin details. Empty = all-primitive placeholder.")]
         public CarVisualKit visualKit;
 
+        [Header("Sound")]
+        [Tooltip("This car's engine and other recordings. Empty = the game's default sound set.")]
+        public Audio.VehicleAudioProfile audioProfile;
+
         public Color Paint(int index) => paints.Length == 0 ? Color.white : paints[Mathf.Abs(index) % paints.Length];
 
         public string PaintName(int index)

@@ -52,3 +52,10 @@ crashlytics-build.properties
 # OS
 .DS_Store
 Thumbs.db
+
+# Sonniss #GameAudioGDC recordings: the licence forbids publishing the sound files (modified or not), so they stay
+# local. Recreate them with Tools/Audio/prepare_sonniss_audio.sh (see ASSET_LICENSES.md). Kenney (CC0) files are kept.
+/[Aa]ssets/[Aa]udio/[Ee]ngine/
+/[Aa]ssets/[Aa]udio/[Ll]oops/horn_loop.wav
+/[Aa]ssets/[Aa]udio/[Ll]oops/horn_loop.wav.meta
+/[Aa]ssets/[Aa]udio/SFX/impact_heavy_*

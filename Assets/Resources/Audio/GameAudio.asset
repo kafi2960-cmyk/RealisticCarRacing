@@ -20,11 +20,11 @@ MonoBehaviour:
   ui: {fileID: 9082892303238254553, guid: ade0c821461154eaf8e65827862bebb8, type: 2}
   music: {fileID: -442357791760397439, guid: ade0c821461154eaf8e65827862bebb8, type: 2}
   defaultVehicle: {fileID: 11400000, guid: 666a401627c194e61b7e6785fa45b4a4, type: 2}
-  hover: {fileID: 0}
-  click: {fileID: 0}
-  back: {fileID: 0}
-  countdownBeep: {fileID: 0}
-  countdownGo: {fileID: 0}
-  lapComplete: {fileID: 0}
-  raceFinish: {fileID: 0}
+  hover: {fileID: 8300000, guid: 91de2fe76976542a5a668ed03944f751, type: 3}
+  click: {fileID: 8300000, guid: 73e5f0471cd2d4574a92d7ddc3e6135b, type: 3}
+  back: {fileID: 8300000, guid: 27b6522d738a944e38b0cd992e9bd704, type: 3}
+  countdownBeep: {fileID: 8300000, guid: b2aaa57ed47924b42b66f9ac14b1f48d, type: 3}
+  countdownGo: {fileID: 8300000, guid: 207baf06153614261a4555314983dc4d, type: 3}
+  lapComplete: {fileID: 8300000, guid: f0b1a1fd40385442288414fca2488a10, type: 3}
+  raceFinish: {fileID: 8300000, guid: 66348bd1546884430b10bf86917d3675, type: 3}
   menuMusic: {fileID: 0}

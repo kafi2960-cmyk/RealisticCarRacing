@@ -40,7 +40,8 @@ namespace RealisticCarRacing.Audio
         /// <summary>Adds sound to a spawned car. Returns null when the project has no audio set up.</summary>
         public static VehicleAudioManager Attach(VehicleController vehicle, bool isPlayer, VehicleAudioProfile profile = null)
         {
-            profile ??= GameAudio.Instance != null ? GameAudio.Instance.defaultVehicle : null;
+            if (profile == null) // Unity's null check (an unassigned field may not be a C# null)
+                profile = GameAudio.Instance != null ? GameAudio.Instance.defaultVehicle : null;
             if (profile == null)
                 return null;
             var manager = vehicle.gameObject.AddComponent<VehicleAudioManager>();

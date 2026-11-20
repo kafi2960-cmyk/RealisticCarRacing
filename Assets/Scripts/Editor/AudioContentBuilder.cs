@@ -51,6 +51,7 @@ namespace RealisticCarRacing.EditorTools
             gameAudio.defaultVehicle = profile;
             EditorUtility.SetDirty(profile);
             EditorUtility.SetDirty(gameAudio);
+            BuildCarProfiles(profile);
             AssetDatabase.SaveAssets();
             return gameAudio;
         }
@@ -134,6 +135,68 @@ namespace RealisticCarRacing.EditorTools
             }
         }
 
+        /// <summary>
+        /// One sound set per car in the catalog: the default set's shared sounds, plus that car's own engine loops
+        /// from Assets/Audio/Engine/&lt;car id&gt;/ (regenerated on every run). A car without its own folder keeps
+        /// the default set.
+        /// </summary>
+        static void BuildCarProfiles(VehicleAudioProfile shared)
+        {
+            var catalog = AssetDatabase.LoadAssetAtPath<Managers.GameCatalog>("Assets/Resources/GameCatalog.asset");
+            if (catalog == null)
+                return;
+            foreach (var car in catalog.cars)
+            {
+                if (car == null)
+                    continue;
+                var layers = EngineLayers($"{AudioRoot}/Engine/{car.id}");
+                if (layers.Length == 0)
+                {
+                    car.audioProfile = null;
+                    EditorUtility.SetDirty(car);
+                    continue;
+                }
+                var profile = LoadOrCreate<VehicleAudioProfile>($"Assets/Settings/Audio/{car.id}_Audio.asset");
+                EditorUtility.CopySerialized(shared, profile);
+                profile.name = $"{car.id}_Audio";
+                profile.engineLayers = layers;
+                // The car's own startup/shutdown recordings, when its folder has them.
+                string folder = $"{AudioRoot}/Engine/{car.id}";
+                profile.startup = CarClip(folder, "engine_startup") ?? profile.startup;
+                profile.shutdown = CarClip(folder, "engine_shutdown") ?? profile.shutdown;
+                car.audioProfile = profile;
+                EditorUtility.SetDirty(profile);
+                EditorUtility.SetDirty(car);
+                Debug.Log($"RealisticCarRacing audio: {car.displayName}: {layers.Length} engine loops ({string.Join(", ", layers.Select(l => l.rpm.ToString("0")))} rpm).");
+            }
+        }
+
+        static AudioClip CarClip(string folder, string name) =>
+            AssetDatabase.FindAssets("t:AudioClip", new[] { folder })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Where(path => System.IO.Path.GetDirectoryName(path)?.Replace('\\', '/') == folder) // this folder only
+                .Select(AssetDatabase.LoadAssetAtPath<AudioClip>)
+                .FirstOrDefault(clip => clip != null && clip.name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+        /// <summary>Engine loops directly in <paramref name="folder"/>, named engine_on_&lt;rpm&gt; / engine_off_&lt;rpm&gt;.</summary>
+        static VehicleAudioProfile.EngineLayer[] EngineLayers(string folder)
+        {
+            if (!AssetDatabase.IsValidFolder(folder))
+                return Array.Empty<VehicleAudioProfile.EngineLayer>();
+            var layers = new List<VehicleAudioProfile.EngineLayer>();
+            foreach (string guid in AssetDatabase.FindAssets("t:AudioClip", new[] { folder }))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (System.IO.Path.GetDirectoryName(path)?.Replace('\\', '/') != folder)
+                    continue;
+                var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+                var parts = clip.name.ToLowerInvariant().Split('_');
+                if (parts.Length >= 3 && parts[0] == "engine" && (parts[1] == "on" || parts[1] == "off") && float.TryParse(parts[2], out float rpm))
+                    layers.Add(new VehicleAudioProfile.EngineLayer { clip = clip, rpm = rpm, load = parts[1] == "on" ? 1f : 0f });
+            }
+            return layers.OrderBy(l => l.load).ThenBy(l => l.rpm).ToArray();
+        }
+
         // ---------- Clips ----------
 
         /// <summary>
@@ -159,21 +222,13 @@ namespace RealisticCarRacing.EditorTools
                 .ToList();
             AudioClip One(string key) => clips.FirstOrDefault(c => c.name.StartsWith(key, StringComparison.OrdinalIgnoreCase));
             AudioClip[] All(string key) => clips.Where(c => c.name.StartsWith(key, StringComparison.OrdinalIgnoreCase)).ToArray();
-            T Keep<T>(T existing, T found) where T : class => existing ?? found;
+            // Unity's null check: an empty serialized field isn't a C# null, so '??' would never replace it.
+            T Keep<T>(T existing, T found) where T : UnityEngine.Object => existing != null ? existing : found;
 
             if (profile.engineLayers.Length == 0)
-            {
-                var layers = new List<VehicleAudioProfile.EngineLayer>();
-                foreach (var clip in clips)
-                {
-                    var parts = clip.name.ToLowerInvariant().Split('_');
-                    if (parts.Length >= 3 && parts[0] == "engine" && (parts[1] == "on" || parts[1] == "off") && float.TryParse(parts[2], out float rpm))
-                        layers.Add(new VehicleAudioProfile.EngineLayer { clip = clip, rpm = rpm, load = parts[1] == "on" ? 1f : 0f });
-                }
-                profile.engineLayers = layers.OrderBy(l => l.load).ThenBy(l => l.rpm).ToArray();
-            }
-            profile.startup = Keep(profile.startup, One("engine_startup"));
-            profile.shutdown = Keep(profile.shutdown, One("engine_shutdown"));
+                profile.engineLayers = EngineLayers($"{AudioRoot}/Engine"); // the default engine: loops directly in Engine/
+            profile.startup = Keep(profile.startup, CarClip($"{AudioRoot}/Engine", "engine_startup"));
+            profile.shutdown = Keep(profile.shutdown, CarClip($"{AudioRoot}/Engine", "engine_shutdown"));
             if (profile.exhaustPops.Length == 0) profile.exhaustPops = All("exhaust_pop");
             profile.gearUp = Keep(profile.gearUp, One("gear_up"));
             profile.gearDown = Keep(profile.gearDown, One("gear_down"));

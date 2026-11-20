@@ -117,7 +117,7 @@ namespace RealisticCarRacing.Tests
             yield return null;
             Assert.That(engine.Loudness, Is.LessThan(0.05f), "silent at first: the startup recording plays");
             yield return Simulate(2f);
-            Assert.That(engine.Loudness, Is.GreaterThan(0.4f), "then the idle loops fade in");
+            Assert.That(engine.Loudness, Is.GreaterThan(0.2f), "then the idle loops fade in");
             // At idle the lowest recordings carry the sound, pitched to the engine's actual RPM.
             for (int i = 0; i < engine.LayerCount; i++)
                 Assert.That(engine.LayerPitch(i), Is.EqualTo(ExpectedPitch(engine.Rpm, i)).Within(0.001f));
@@ -172,7 +172,7 @@ namespace RealisticCarRacing.Tests
         }
 
         float ExpectedPitch(float rpm, int layer) =>
-            Mathf.Clamp(Mathf.Max(rpm, settings.idleRpm * 0.9f) / profile.engineLayers[layer].rpm, 0.35f, 2.5f);
+            Mathf.Clamp(Mathf.Max(rpm, settings.idleRpm * 0.9f) / profile.engineLayers[layer].rpm, CarEngineAudio.MinPitch, CarEngineAudio.MaxPitch);
 
         float OnLoadLevel(CarEngineAudio engine)
         {

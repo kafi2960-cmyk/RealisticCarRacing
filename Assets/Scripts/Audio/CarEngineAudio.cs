@@ -10,6 +10,7 @@ namespace RealisticCarRacing.Audio
     /// On-throttle and coasting recordings are blended by engine load (the torque the engine is making against what
     /// it could make at this RPM), so accelerating sounds harder than lifting off at the same revs. Lifting off from
     /// high RPM fires a few exhaust crackles. Startup and shutdown play their recordings and fade the loops in or out.
+    /// The level also rises with revs (recordings are level-matched, so the loudness curve is applied here).
     /// Levels are computed directly from the eased inputs (engine RPM, smoothed load, start/stop fade), so the blend
     /// is equal-power at every frame and nothing jumps.
     /// </summary>
@@ -18,6 +19,7 @@ namespace RealisticCarRacing.Audio
         const float LoadTime = 0.12f;                    // smoothing of the load estimate (s)
         const float RpmTime = 0.04f;                     // smoothing of RPM for the sound: softens shift edges
         const float InteriorCutoff = 2800f;              // Hz: the cockpit muffles the engine bay
+        public const float MinPitch = 0.3f, MaxPitch = 3f; // how far one recording may be pitched
         const float StartFade = 0.6f, StopFade = 0.5f;   // s
 
         VehicleAudioManager manager;
@@ -162,15 +164,17 @@ namespace RealisticCarRacing.Audio
             if (hasOn && hasOff)
                 CrossFade(false, offWeight, false);
 
+            // A real engine is much louder near the redline than at idle (about 6 dB here).
+            float rpmGain = Mathf.Lerp(0.5f, 1f, Mathf.InverseLerp(vehicle.Settings.idleRpm, vehicle.Settings.redlineRpm, Rpm));
             float loudness = 0f;
             for (int i = 0; i < layers.Count; i++)
             {
                 var (source, layer) = layers[i];
-                float target = weights[i] * loadGain * master;
+                float target = weights[i] * loadGain * rpmGain * master;
                 loudness += target;
                 source.volume = target * profile.engineVolume;
                 // Each recording is pitched by how far the engine is from the RPM it was recorded at.
-                source.pitch = Mathf.Clamp(Mathf.Max(Rpm, vehicle.Settings.idleRpm * 0.9f) / Mathf.Max(100f, layer.rpm), 0.35f, 2.5f);
+                source.pitch = Mathf.Clamp(Mathf.Max(Rpm, vehicle.Settings.idleRpm * 0.9f) / Mathf.Max(100f, layer.rpm), MinPitch, MaxPitch);
             }
             Loudness = loudness;
         }

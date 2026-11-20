@@ -23,7 +23,7 @@ namespace RealisticCarRacing.Audio
 
         [Header("Engine")]
         public EngineLayer[] engineLayers = Array.Empty<EngineLayer>();
-        [Range(0f, 1f)] public float engineVolume = 0.8f;
+        [Range(0f, 1f)] public float engineVolume = 1f;
         public AudioClip startup;
         public AudioClip shutdown;
         [Tooltip("Exhaust crackles on lifting off at high RPM.")]

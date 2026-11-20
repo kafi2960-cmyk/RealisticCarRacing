@@ -39,3 +39,4 @@ MonoBehaviour:
   tyreMaterial: {fileID: 2100000, guid: 46642bedacc5c43279cc819be2ee7e9f, type: 2}
   markerMaterial: {fileID: 2100000, guid: f50aa6337b86248f7bf9eeef1fccda17, type: 2}
   visualKit: {fileID: 11400000, guid: 100336e1167a84d4f83f9e4f10a8a3ff, type: 2}
+  audioProfile: {fileID: 11400000, guid: c9d8a1bb49a144861a861f6aa2da8fc4, type: 2}

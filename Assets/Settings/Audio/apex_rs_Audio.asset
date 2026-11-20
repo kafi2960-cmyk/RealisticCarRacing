@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21371195a122c484eb7bf9530fd5ffe2, type: 3}
+  m_Name: apex_rs_Audio
+  m_EditorClassIdentifier: RealisticCarRacing::RealisticCarRacing.Audio.VehicleAudioProfile
+  engineLayers:
+  - clip: {fileID: 8300000, guid: a879d1cd1194b45fa89142377d52b0ea, type: 3}
+    rpm: 2000
+    load: 1
+  - clip: {fileID: 8300000, guid: ba32efda930cb4780b2a0ed270a58c9c, type: 3}
+    rpm: 5000
+    load: 1
+  engineVolume: 1
+  startup: {fileID: 8300000, guid: 29a75a6d75f3145ad918ac79266a656b, type: 3}
+  shutdown: {fileID: 8300000, guid: 7a28f5004ecc445d0b1bdc19e0598835, type: 3}
+  exhaustPops: []
+  gearUp: {fileID: 0}
+  gearDown: {fileID: 0}
+  gearEngage: {fileID: 0}
+  tyreSqueal: {fileID: 0}
+  tyreLockup: {fileID: 0}
+  drift: {fileID: 0}
+  brake: {fileID: 0}
+  asphalt: {fileID: 0}
+  kerb: {fileID: 0}
+  grass: {fileID: 0}
+  gravel: {fileID: 0}
+  wind: {fileID: 0}
+  horn: {fileID: 8300000, guid: 4415c4833a6c2498cb79d65a50a8eff3, type: 3}
+  scrape: {fileID: 0}
+  lightImpacts:
+  - {fileID: 8300000, guid: d44adab4921fc411a9cb782e09e0c89a, type: 3}
+  - {fileID: 8300000, guid: 8589c4d84d3454165a16b05f9bcb0c41, type: 3}
+  - {fileID: 8300000, guid: e62af21143bf64d71a91fbea976e110f, type: 3}
+  - {fileID: 8300000, guid: 7720f76cd06b1443c9b115580be0bcb6, type: 3}
+  - {fileID: 8300000, guid: 65cbc73d947c049978cf6bfc9e78e08f, type: 3}
+  heavyImpacts:
+  - {fileID: 8300000, guid: 64127abc6ea0449bc85e323b25d5e8e6, type: 3}
+  - {fileID: 8300000, guid: 6ef9f44099fc3449192bf2fd49354d3a, type: 3}
+  - {fileID: 8300000, guid: 6896ca56355024082a22d617adcfa202, type: 3}
+  - {fileID: 8300000, guid: 6ee8a2db8586f4a86b1d38d63c3997e4, type: 3}
+  - {fileID: 8300000, guid: ba73245b7b577491b80d9ebae9b9c964, type: 3}
+  - {fileID: 8300000, guid: dcd600e4beed74ccd8ffe5e3b727ff86, type: 3}
+  - {fileID: 8300000, guid: ede56abd49e83409db216addd586b3ca, type: 3}
+  - {fileID: 8300000, guid: 7981506e30be34d55a12d2318b6268da, type: 3}
+  - {fileID: 8300000, guid: f77f8edbc30004c2bb47fa434de19815, type: 3}
+  - {fileID: 8300000, guid: 6b19e475962bc41248d772ead32bf6ba, type: 3}

@@ -129,7 +129,7 @@ namespace RealisticCarRacing.Racing
                 entrant.Progress.CheckpointReached += checkpoint => entrant.RecordCheckpoint(checkpoint, RaceTime);
                 entrant.Progress.LapCompleted += laps => OnLapCompleted(entrant, laps);
                 racers.Add(entrant);
-                Audio.VehicleAudioManager.Attach(entrant.Vehicle, entrant.IsPlayer);
+                Audio.VehicleAudioManager.Attach(entrant.Vehicle, entrant.IsPlayer, entrant.Car.audioProfile);
             }
 
             standings.AddRange(racers);
