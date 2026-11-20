@@ -10,6 +10,26 @@ Cross-platform 3D car racing simulator built with Unity and the Universal Render
 | Platforms | Windows, macOS, Android, iOS |
 | Language / IDE | C# · Visual Studio Code |
 
+## How to play
+
+**Download (Mac with Apple Silicon: M1 or newer, macOS 12+):**
+
+1. Open the [latest release](https://github.com/kafi2960-cmyk/RealisticCarRacing/releases/latest) and download
+   `RealisticCarRacing-macOS-v0.1.0.zip`.
+2. Double-click the zip to unpack **RealisticCarRacing.app**.
+3. The app isn't signed by Apple, so the first time **right-click it → Open → Open** (or System Settings →
+   Privacy & Security → *Open Anyway*). After that it opens normally.
+
+Intel Macs, Windows and phones: no download yet. Build it from source (below) with the matching Unity platform module.
+
+**In the game:** RACE → pick an event → choose your car, paint, wheels and setup in the garage → **START RACE**.
+Drive with **W / A / S / D** or the arrow keys, **Space** handbrake, **C** camera, **H** horn, **Esc** pause, **R**
+reset the car. A gamepad works too (triggers, left stick). Full controls are listed below.
+
+**From source:** open the project in Unity 6000.6.10f1, open `Assets/Scenes/MainMenu.unity` and press Play, or build
+with **RealisticCarRacing → Build → macOS**. The engine and tyre recordings aren't in the repository (licence);
+see *Audio* below to add them, otherwise the cars are silent.
+
 ## Getting started
 
 1. Open the project in **Unity Hub → Add → `~/Projects/RealisticCarRacing`** with editor 6000.6.10f1.
