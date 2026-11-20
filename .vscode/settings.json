@@ -1,0 +1,21 @@
+{
+    "files.exclude": {
+        "**/.DS_Store": true,
+        "**/*.meta": true,
+        "Library/": true,
+        "Temp/": true,
+        "Logs/": true,
+        "UserSettings/": true,
+        "Builds/": true,
+        "obj/": true
+    },
+    "search.exclude": {
+        "Library/": true,
+        "Temp/": true,
+        "Builds/": true
+    },
+    "dotnet.defaultSolution": "RealisticCarRacing.slnx",
+    "editor.formatOnSave": false,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true
+}

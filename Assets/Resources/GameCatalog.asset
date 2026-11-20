@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a99721f8fe6b84242b8a66cd8b8941f5, type: 3}
+  m_Name: GameCatalog
+  m_EditorClassIdentifier: RealisticCarRacing::RealisticCarRacing.Managers.GameCatalog
+  cars:
+  - {fileID: 11400000, guid: aa384431071c540e5aa82f6630985d78, type: 2}
+  - {fileID: 11400000, guid: 8c0aec914c22442c683c9cf13c13c78a, type: 2}
+  - {fileID: 11400000, guid: 288a155d234c54230952d51ef92cae4b, type: 2}
+  races:
+  - {fileID: 11400000, guid: ecee5c72d4b5a445ea2e5c1e01aadd5e, type: 2}
+  - {fileID: 11400000, guid: 458a3d9b69bfc4e2f8fa98d91a309aa8, type: 2}
+  - {fileID: 11400000, guid: ede40709e76ae4cc6bd9bd6abd622832, type: 2}
+  - {fileID: 11400000, guid: 41b42e753b02e4cc7bf6761a34d6d8e1, type: 2}
+  opponentNames:
+  - A. Varga
+  - K. Mendes
+  - L. Okafor
+  - J. Lindqvist
+  - R. Takeda
+  - S. Novak
+  - D. Moreau
+  - T. Haddad
+  - E. Kowalczyk
+  - N. Silva
+  - P. Ivanova

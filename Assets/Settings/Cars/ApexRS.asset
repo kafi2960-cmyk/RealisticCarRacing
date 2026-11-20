@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34a6e7f13b30c4180ad11ec28debd85e, type: 3}
+  m_Name: ApexRS
+  m_EditorClassIdentifier: RealisticCarRacing::RealisticCarRacing.Vehicles.CarDefinition
+  id: apex_rs
+  displayName: Apex RS
+  description: All-wheel-drive turbo. The most power and traction, but also the heaviest.
+  settings: {fileID: 11400000, guid: 5909299222dc14732b7e12bfc5b6b945, type: 2}
+  paints:
+  - {r: 0.1, g: 0.25, b: 0.7, a: 1}
+  - {r: 0.92, g: 0.92, b: 0.9, a: 1}
+  - {r: 0.06, g: 0.06, b: 0.07, a: 1}
+  - {r: 0.55, g: 0.57, b: 0.6, a: 1}
+  - {r: 0.1, g: 0.45, b: 0.25, a: 1}
+  - {r: 0.95, g: 0.45, b: 0.05, a: 1}
+  - {r: 0.45, g: 0.1, b: 0.55, a: 1}
+  - {r: 0.1, g: 0.6, b: 0.75, a: 1}
+  bodyMaterial: {fileID: 2100000, guid: bc080caa10b87436da5f3d32e20d6470, type: 2}
+  cabinMaterial: {fileID: 2100000, guid: 471bd142489b44728880eb8c7c528a20, type: 2}
+  tyreMaterial: {fileID: 2100000, guid: 46642bedacc5c43279cc819be2ee7e9f, type: 2}
+  markerMaterial: {fileID: 2100000, guid: f50aa6337b86248f7bf9eeef1fccda17, type: 2}

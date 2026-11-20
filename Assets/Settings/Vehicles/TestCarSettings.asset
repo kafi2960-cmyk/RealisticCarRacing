@@ -1,0 +1,127 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cbdf92a5e02ae44718f879622f10a0cd, type: 3}
+  m_Name: TestCarSettings
+  m_EditorClassIdentifier: RealisticCarRacing::RealisticCarRacing.Vehicles.VehicleSettings
+  mass: 1350
+  centerOfMassOffset: {x: 0, y: -0.3, z: 0.05}
+  dragCoefficient: 0.32
+  frontalArea: 2.1
+  downforceCoefficient: 1
+  rollingResistance: 0.015
+  collisionDetection: 3
+  idleRpm: 900
+  redlineRpm: 7000
+  torqueCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 800
+      value: 180
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 2500
+      value: 250
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 4500
+      value: 285
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 6000
+      value: 270
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 7000
+      value: 230
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  rpmResponse: 10
+  launchRpm: 3200
+  engineBrakeTorque: 70
+  defaultTransmission: 0
+  driveType: 1
+  forwardGearRatios:
+  - 3.6
+  - 2.19
+  - 1.41
+  - 1.12
+  - 0.92
+  - 0.76
+  reverseGearRatio: 3.4
+  finalDriveRatio: 3.9
+  drivetrainEfficiency: 0.85
+  shiftDuration: 0.2
+  upshiftRpm: 6300
+  downshiftRpm: 2800
+  minTimeBetweenShifts: 0.6
+  directionChangeSpeed: 1
+  maxBrakeTorque: 9000
+  frontBrakeBias: 0.65
+  handbrakeTorque: 4000
+  handbrakeRearGrip: 0.5
+  holdBrakeTorque: 300
+  maxSteerAngle: 33
+  highSpeedSteerAngle: 8
+  highSpeedSteerKmh: 160
+  steerSpeed: 180
+  ackermannSteering: 1
+  suspensionDistance: 0.2
+  springRate: 35000
+  damperRate: 4000
+  suspensionTargetPosition: 0.5
+  frontAntiRoll: 7000
+  rearAntiRoll: 5000
+  wheelRadius: 0.34
+  wheelMass: 20
+  forwardFriction:
+    extremumSlip: 0.4
+    extremumValue: 1
+    asymptoteSlip: 0.8
+    asymptoteValue: 0.5
+    stiffness: 1.6
+  sidewaysFriction:
+    extremumSlip: 0.25
+    extremumValue: 1
+    asymptoteSlip: 0.5
+    asymptoteValue: 0.75
+    stiffness: 1.5
+  substepSpeedThreshold: 5
+  substepsBelowThreshold: 12
+  substepsAboveThreshold: 15
