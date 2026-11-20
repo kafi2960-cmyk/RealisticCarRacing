@@ -26,8 +26,8 @@ MonoBehaviour:
   gearUp: {fileID: 0}
   gearDown: {fileID: 0}
   gearEngage: {fileID: 0}
-  tyreSqueal: {fileID: 0}
-  tyreLockup: {fileID: 0}
+  tyreSqueal: {fileID: 8300000, guid: c9ea081fd71a1451cab8408a1c4917e3, type: 3}
+  tyreLockup: {fileID: 8300000, guid: 737c34b1be1bb496ca15c9110d7efa03, type: 3}
   drift: {fileID: 0}
   brake: {fileID: 0}
   asphalt: {fileID: 0}

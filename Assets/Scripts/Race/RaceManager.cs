@@ -157,7 +157,8 @@ namespace RealisticCarRacing.Racing
 
         void FixedUpdate()
         {
-            if (State == RaceState.Countdown)
+            // Paused: physics steps Unity had already queued when the pause began must not run the race clock.
+            if (State == RaceState.Countdown || IsPaused)
                 return;
 
             float dt = Time.fixedDeltaTime;

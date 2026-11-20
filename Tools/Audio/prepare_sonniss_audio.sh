@@ -3,6 +3,7 @@
 # the sound files). Needs macOS (afconvert) and Python 3.
 #
 # 1. Download from https://sonniss.com/gameaudiogdc (GDC 2020, free, royalty-free; read the licence there):
+#      Sonniss.com - GDC 2020 - Game Audio Bundle Part3of14.zip
 #      Sonniss.com - GDC 2020 - Game Audio Bundle Part6of14.zip
 #      Sonniss.com - GDC 2020 - Game Audio Bundle Part12of14.zip
 # 2. Run:  Tools/Audio/prepare_sonniss_audio.sh <folder with those zips>
@@ -10,7 +11,7 @@
 #
 # Every step is listed here: which recording, which seconds, the loudness target and whether it loops.
 set -e
-ZIPS="$1"; [ -d "$ZIPS" ] || { echo "usage: $0 <folder with Part6of14.zip and Part12of14.zip>"; exit 1; }
+ZIPS="$1"; [ -d "$ZIPS" ] || { echo "usage: $0 <folder with Part3of14.zip, Part6of14.zip and Part12of14.zip>"; exit 1; }
 HERE=$(cd "$(dirname "$0")" && pwd); PROJECT=$(cd "$HERE/../.." && pwd)
 WORK=$(mktemp -d); trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/raw" "$WORK/m48"
@@ -21,8 +22,8 @@ import zipfile, glob, os, sys, re
 src, out = sys.argv[1], sys.argv[2]
 want = re.compile(r'(Audi A4 Allroad 2.0 TFSI Engine 4k|Lexus LFA 0[6]|Lexus LFA 12|Subaru Impreza GD WRX 08|Subaru Impreza GD WRX 11|'
                   r'Mazda Miata MX5 NBFL 1.6 Modded - (02|16)|Audi, R8, t3, Onbrd, Start|BMW_M4_t7_Ext_Start|BMW_E30_t6_Onbrd_Start|'
-                  r'Car_Destruction_(Designed_t44|Chassis_Impact)|Corvette_C7_t10_Var_SFX_Horn)')
-for part in glob.glob(os.path.join(src, '*Part6of14.zip')) + glob.glob(os.path.join(src, '*Part12of14.zip')):
+                  r'Car_Destruction_(Designed_t44|Chassis_Impact)|Corvette_C7_t10_Var_SFX_Horn|BMW1502 BMW 520i)')
+for part in sum((glob.glob(os.path.join(src, f'*Part{n}of14.zip')) for n in (3, 6, 12)), []):
     with zipfile.ZipFile(part) as z:
         for i in z.infolist():
             if not i.is_dir() and want.search(i.filename) and i.filename.lower().endswith('.wav') and '..' not in i.filename:
@@ -56,4 +57,9 @@ i=0; for st in 0.64 7.78 16.72 27.34 36.66 49.26; do
   $P "$M/Car_Destruction_Designed_t44_Impacts_Interor.wav" "$A/SFX/impact_heavy_2$i.wav" --start $st --end $(python3 -c "print($st+2.5)") --rms -20 --fadeout 0.6; i=$((i+1)); done
 i=1; for st in 9.64 21.78; do
   $P "$M/Car_Destruction_Chassis_Impact_t36_Ext_Drop_on_Ground_Metal_Crash_Bounce_Various_MKH8060.wav" "$A/SFX/impact_heavy_3$i.wav" --start $st --end $(python3 -c "print($st+2.5)") --rms -20 --fadeout 0.6; i=$((i+1)); done
+# Tyres: the steadiest squeal (about 1.3 kHz) and a braking skid (about 2 kHz) from a BMW 520i skid take, found with
+# brightness.py (high-frequency, sustained) and checked for a steady pitch; looped with a 150 ms crossfade.
+BMW="$M/BMW1502 BMW 520i Exhaust Rear Bumper Interior QUAD Drive Skid.wav"
+$P "$BMW" "$A/Loops/tyre_squeal.wav" --start 337.35 --end 338.55 --loop --xfade 0.15 --rms -18
+$P "$BMW" "$A/Loops/tyre_lockup.wav" --start 315.2 --end 316.3 --loop --xfade 0.15 --rms -18
 echo "Done. Now run RealisticCarRacing > Create Audio Content in Unity."

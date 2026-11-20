@@ -97,13 +97,13 @@ assets to tune cars, change laps/opponents/difficulty or add events. AI pace per
 
 ## Audio
 
-Engines, startups and shutdowns, the horn and crashes use real recordings from the free Sonniss GDC 2020 bundle;
+Engines, startups and shutdowns, tyre squeal and lock-up, the horn and crashes use real recordings from the free Sonniss GDC 2020 bundle;
 menu and countdown sounds and light knocks come from Kenney (CC0). **The Sonniss files are not in this repository**
-(their licence forbids publishing the sound files): download parts 6 and 12 of the 2020 bundle from
+(their licence forbids publishing the sound files): download parts 3, 6 and 12 of the 2020 bundle from
 [sonniss.com/gameaudiogdc](https://sonniss.com/gameaudiogdc), run `Tools/Audio/prepare_sonniss_audio.sh <folder>`,
 then **RealisticCarRacing → Create Audio Content**. Without them the engines are silent; nothing is synthesised to
-stand in for missing recordings. Not yet sourced: tyre squeal/skid, gear shifts, road and gravel noise, wind,
-barrier scrape, exhaust crackles, music.
+stand in for missing recordings. Not yet sourced (silent): gear shifts, brake pads, road/kerb/grass/gravel rolling
+noise, wind, barrier scrape, exhaust crackles, a dedicated drift loop (the squeal is used, pitched down), music.
 
 | Part | What it does |
 |---|---|
